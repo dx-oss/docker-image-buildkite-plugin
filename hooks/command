@@ -100,6 +100,7 @@ fi
 # docker - check if a key is set and it exists in env, if not use default env
 docker_file=$file
 docker_assume_role_required=0
+docker_login=0
 docker_role=${BUILDKITE_PLUGIN_DOCKER_IMAGE_ROLE:-""}
 docker_registry=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY}
 docker_registry_name=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY_NAME}
@@ -154,6 +155,7 @@ if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
 
     echo "Login [${docker_registry}]"
     $awscli ecr get-login-password --region ${docker_registry_region} | docker login --username AWS --password-stdin ${docker_registry}
+    docker_login=1
 elif [ "$docker_provider" = "jfrog" ]; then
     docker_registry=${JFROG_DOCKER_REGISTRY}
     docker_auth_user=${JFROG_DOCKER_USER}
@@ -188,12 +190,14 @@ export DOCKER_AUTH_USER=$docker_auth_user
 export DOCKER_AUTH_SECRET=$docker_auth_secret
 export DOCKER_ROLE=$docker_role
 
-if [ "${DOCKER_ROLE}" == "" ]; then 
-    echo "Login into ${DOCKER_REGISTRY}"
-    echo "${DOCKER_AUTH_SECRET}" | $docker login -u "${DOCKER_AUTH_USER}" --password-stdin "${DOCKER_REGISTRY}"
-else
-    echo "TODO: fix assume role"
-    exit 1
+if [ $docker_login -eq 0 ]; then
+    if [ "${DOCKER_ROLE}" == "" ]; then 
+        echo "Login into ${DOCKER_REGISTRY}"
+        echo "${DOCKER_AUTH_SECRET}" | $docker login -u "${DOCKER_AUTH_USER}" --password-stdin "${DOCKER_REGISTRY}"
+    else
+        echo "TODO: fix assume role"
+        exit 1
+    fi
 fi
 
 docker_build_args=""
