@@ -66,7 +66,7 @@ if [ -z "$tags" ]; then
         fi
     done
 
-    if [ "${tags}" == ""] && [ "${version}" != "" ]; then
+    if [ "${tags}" == "" ] && [ "${version}" != "" ]; then
         tags="${version}"
     fi
 fi
@@ -209,7 +209,7 @@ args="--rm $docker_build_args"
 if [ $nocache -gt 0 ]; then
     $args="$args --nocache"
 fi
-$docker build -f $docker_file $args $image:$tag_sha
+$docker build -f $docker_file $args $image:$tag_sha .
 
 for t in $tags {
     $docker tag $image:$tag_sha $image:$t
