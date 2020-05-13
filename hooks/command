@@ -197,13 +197,6 @@ if [ $nuget -gt 0 ] || [ "$nuget_provider" != "" ]; then
     docker_build_args="$docker_build_args --build-arg NUGET_BASEURL=\"${nuget_baseurl}\" --build-arg NUGET_AUTH_USER=\"${nuget_auth_user}\" --build-arg NUGET_AUTH_KEY=\"${nuget_auth_secret}\""
 fi
 
-if [ $debug -gt 0 ]; then
-    dotnet_execute --info
-    dotnet_execute --list-runtimes
-    dotnet_execute --list-sdks
-    dotnet_execute nuget --version
-fi
-
 # build
 
 args="--rm $docker_build_args"
