@@ -44,7 +44,7 @@ git_url=https://github.com/${git_owner}/${git_repo}/
 # image
 name=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NAME:-$git_repo}
 namespace=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NAMESPACE:-$git_owner}
-image=${BUILDKITE_PLUGIN_DOCKER_IMAGE_IMAGE:-"${namespace}/${name}"}
+image=${BUILDKITE_PLUGIN_DOCKER_IMAGE_IMAGE:-""}
 
 # tags
 tag_sha=$(git rev-parse --short $BUILDKITE_COMMIT)
@@ -109,14 +109,17 @@ if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
     docker_auth_secret=${GITHUB_PACKAGE_NUGET_SECRET}
     docker_role=${GITHUB_PACKAGE_NUGET_ROLE}
     docker_assume_role_required=1
+    image=${image:="${git_owner}/${git_repo}/${name}"}
 elif [ "$docker_provider" = "jfrog" ]; then
     docker_registry=${JFROG_DOCKER_REGISTRY}
     docker_auth_user=${JFROG_DOCKER_USER}
-    docker_auth_secret=${JFROG_DOCKER_SECRET}    
+    docker_auth_secret=${JFROG_DOCKER_SECRET}
+    image=${image:="${namespace}/${name}"}
 elif [ "$docker_provider" = "github" ]; then
     docker_registry=${GITHUB_PACKAGE_DOCKER_REGISTRY}
     docker_auth_user=${GITHUB_PACKAGE_DOCKER_USER}
     docker_auth_secret=${GITHUB_PACKAGE_DOCKER_SECRET}
+    image=${image:="${namespace}/${name}"}
 fi
 docker_registry=${docker_registry:-$DOCKER_REGISTRY}
 docker_auth_user=${docker_auth_user:-$DOCKER_AUTH_USER}
