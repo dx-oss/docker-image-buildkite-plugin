@@ -143,15 +143,16 @@ if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
 
     # check ecr
     if [ "$docker_registry" == "" ]; then
-        docker_registry_exists=$($awscli ecr describe-repositories --repository-names "${docker_registry_name}" --output text --query 'repositories[0].repositoryUri' || true)
-        if [ "$docker_registry_exists" == "" ]; then
+        docker_registry=$($awscli ecr describe-repositories --repository-names "${docker_registry_name}" --output text --query 'repositories[0].repositoryUri' | cut -f1 -d/ || true)
+        if [ "$docker_registry" == "" ]; then
             echo "Create registry ${docker_registry_name}"
             $awscli ecr create-repository --repository-name "${docker_registry_name}"
-            #docker_registry=$($awscli ecr describe-repositories --repository-names "${docker_registry_name}" --output text --query 'repositories[0].repositoryUri' || true)
+            docker_registry=$($awscli ecr describe-repositories --repository-names "${docker_registry_name}" --output text --query 'repositories[0].repositoryUri' | cut -f1 -d/ || true)
+        fi
+        if [ "$docker_registry" == "" ]; then
+            docker_registry="${docker_registry_account}.dkr.ecr.${docker_registry_region}.amazonaws.com"
         fi
     fi
-
-    docker_registry="${docker_registry_account}.dkr.ecr.${docker_registry_region}.amazonaws.com"
 
     echo "Login [${docker_registry}]"
     $awscli ecr get-login-password --region ${docker_registry_region} | docker login --username AWS --password-stdin ${docker_registry}
