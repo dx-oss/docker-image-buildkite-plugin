@@ -141,6 +141,14 @@ export DOCKER_AUTH_USER=$docker_auth_user
 export DOCKER_AUTH_SECRET=$docker_auth_secret
 export DOCKER_ROLE=$docker_role
 
+if [ "${DOCKER_ROLE}" == "" ]; then 
+    echo "Login into ${DOCKER_REGISTRY}"
+    echo "${DOCKER_AUTH_SECRET}"" [ $docker login -u "${DOCKER_AUTH_USER}"" --password-stdin "${DOCKER_REGISTRY}"
+else
+    echo "TODO: fix assume role"
+    exit 1
+fi
+
 docker_build_args=""
 if [ "${version}" != "" ]; then
     docker_build_args+=" --build-arg=\"VERSION=${version}\""
