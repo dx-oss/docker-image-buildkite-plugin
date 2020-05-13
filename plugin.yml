@@ -1,0 +1,84 @@
+name: "docker-image"
+description: Buildkite plugin that pack and build docker image/artiface
+author: https://github.com/dx-oss
+requirements: ["docker","buildkite-agent"]
+configuration:
+  version:
+    name: string
+    description: Version using [CONFIG:VERSION, META:VERSION, ENV:VERSION, ENV:BUILDKITE_TAG] variables if not set (required) 
+  tags:
+    name: array
+    description: Image tags
+  tag_sha:
+    name: int
+    description: if value is greater then zero the plugin will add the git short sha as tag
+  name:
+    name: string
+    description: Name it is used if image not set
+  namespace:
+    name: string
+    description: Namespace, it is used if image not set   
+  image:
+    name: string
+    description: Which name for docker image (IMAGE)
+  provider:
+    name: string
+    description: Where to push the nuget url a env key, default (REGISTRY_PROVIDER)
+  registry:
+    name: string
+    description: Registry host, default (REGISTRY_SERVER)
+  auth_user:
+    name: string
+    description: Docker username key (AUTH_USER)
+  auth_secret:
+    name: string
+    description: Docker token key (AUTH_SECRET)
+  role:
+    name: string
+    description: If the provider required a assume of a role, default (AUTH_ROLE)
+  file:
+    name: string
+    description: Alternative Dockerfile
+  wrkdir:
+    name: string
+    description: Alternative working directory
+  debug:
+    name: int
+    description: if value is greater then zero the plugin will expose debug information. when the value are 2 it will also expose extended information.
+  nocache:
+    name: int
+    description: if value is greater then zero the plugin add nocache to the docker build
+  ssh:
+    name: int
+    description: if value is greater then zero the plugin would add ~/.ssh/id_rsa to SSH_PRIVATE_KEY build_arg
+  ssh_file:
+    name: string
+    description: if set the the ssh_file will be added as SSH_PRIVATE_KEY as build_arg
+  github:
+    name: int
+    description: if value is greater then zero the plugin would add GITHUB_TOKEN to build_arg
+  github_key:
+    name: string
+    description: Get the github token from this key instead of (GITHUB_TOKEN)
+  nuget:
+    name: int
+    description: if value is greater then zero the plugin would add nuget to build_arg
+  nuget_provider:
+    name: string
+    description: Get the nuget provider instead of (NUGET_PROVIDER)
+  nuget_baseurl:
+    name: string
+    description: Fetch nuget base url from a env key, default (NUGET_BASEURL)   
+  nuget_auth_user:
+    name: string
+    description: Nuget username key
+  nuget_auth_secret:
+    name: string
+    description: Nuget token key
+  dry:
+    name: int
+    description: if value is greater then zero the plugin will not pusht the new release
+  agent:
+    name: string
+    description: buildkite-agent binary (https://github.com/buildkite/agent)
+  additionalProperties: false

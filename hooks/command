@@ -1,0 +1,208 @@
+#!/bin/bash
+
+# https://buildkite.com/docs/pipelines/writing-build-scripts
+set -euo pipefail
+
+# common
+
+pwd=$(pwd)
+dryrun=${BUILDKITE_PLUGIN_DOCKER_IMAGE_DRY:-0}
+nocache=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NOCACHE:-0}
+ssh=${BUILDKITE_PLUGIN_DOCKER_IMAGE_SSH:-0}
+ssh_file=${BUILDKITE_PLUGIN_DOCKER_IMAGE_SSH_FILE:-"~/.ssh/id_rsa"}
+github=${BUILDKITE_PLUGIN_DOCKER_IMAGE_GITHUB:-0}
+nuget=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NUGET:-0}
+
+buildkite_agent=${BUILDKITE_PLUGIN_DOCKER_IMAGE_AGENT:-buildkite-agent}
+docker=${BUILDKITE_PLUGIN_DOCKER_IMAGE_DOCKER:-docker}
+debug=${BUILDKITE_PLUGIN_DOCKER_IMAGE_DEBUG:-0}
+if [ $debug -gt 0 ]; then
+    set -euox pipefail
+
+    if [ $debug -eq 2 ]; then
+        env
+    fi
+
+    $docker version
+    $docker ps
+    whoami
+    pwd
+fi
+
+version_meta=`$buildkite_agent meta-data get version || true`
+version=${BUILDKITE_PLUGIN_DOCKER_IMAGE_VERSION:-$version_meta}
+version=${version:-$BUILDKITE_TAG}
+if [ -z "$version" ]; then
+    echo "VERSION/BUILDKITE_TAG is empty"
+    exit 1
+fi
+
+# git
+git_owner=$(echo "$BUILDKITE_REPO" | cut -d: -f 2 | cut -d/ -f 1)
+git_repo=$(echo "$BUILDKITE_REPO" | cut -d: -f 2 | cut -d/ -f 2 | cut -d. -f 1)
+git_url=https://github.com/${git_owner}/${git_repo}/
+
+# image
+name=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NAME:-$git_repo}
+namespace=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NAMESPACE:-$git_owner}
+image=${BUILDKITE_PLUGIN_DOCKER_IMAGE_IMAGE}
+if [ -z "$image" ]; then
+    image="${namespace}/${name}"
+fi
+
+tag_sha=$(git rev-parse --short $BUILDKITE_COMMIT)
+#tag=${BUILDKITE_BUILD_ID:-$tag_sha}
+tag=$tag_sha
+
+tags=${BUILDKITE_PLUGIN_DOCKER_IMAGE_TAGS}
+if [ -z "$tags" ]; then
+    if [ "$version" != "" ]; then
+        tags="${version}"
+    fi
+fi
+if [ -z "$tags" ]; then
+    echo "Tags are required"
+    exit 1    
+fi
+
+# Dockerfile
+wrkdir=${BUILDKITE_PLUGIN_DOCKER_IMAGE_WRKDIR:-$pwd}
+file=${BUILDKITE_PLUGIN_DOCKER_IMAGE_FILE:-"Dockerfile"}
+if [ ! -d "$wrkdir" ]; then
+    echo "Working directory ($wrkdir) does not exists"
+    exit 1
+fi
+cd $wrkdir
+if [ ! -e "$file" ]; then
+    echo "Dockerfile ($file) does not exists"
+    exit 1
+fi
+
+# docker - check if a key is set and it exists in env, if not use default env
+docker_file=$file
+docker_assume_role_required=0
+docker_role=${BUILDKITE_PLUGIN_DOCKER_IMAGE_ROLE}
+docker_registry=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY}
+docker_auth_user=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_USER}
+docker_auth_secret=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_SECRET}
+docker_provider=${BUILDKITE_PLUGIN_DOCKER_IMAGE_PROVIDER:-$NUGET_PROVIDER}
+if [ "$docker_provider" = "ecr" || "$docker_provider" = "aws" ]; then
+    docker_registry=${GITHUB_PACKAGE_NUGET_BASEURL}
+    docker_auth_user=${GITHUB_PACKAGE_NUGET_USER}
+    docker_auth_secret=${GITHUB_PACKAGE_NUGET_SECRET}
+    docker_role=${GITHUB_PACKAGE_NUGET_ROLE}
+    docker_assume_role_required=1
+elif [ "$docker_provider" = "jfrog" ]; then
+    docker_registry=${JFROG_DOCKER_REGISTRY}
+    docker_auth_user=${JFROG_DOCKER_USER}
+    docker_auth_secret=${JFROG_DOCKER_SECRET}    
+elif [ "$docker_provider" = "github" ]; then
+    docker_registry=${GITHUB_PACKAGE_DOCKER_REGISTRY}
+    docker_auth_user=${GITHUB_PACKAGE_DOCKER_USER}
+    docker_auth_secret=${GITHUB_PACKAGE_DOCKER_SECRET}
+fi
+docker_registry=${docker_registry:-$DOCKER_REGISTRY}
+docker_auth_user=${docker_auth_user:-$DOCKER_AUTH_USER}
+docker_auth_secret=${docker_auth_secret:-$DOCKER_AUTH_SECRET}
+
+if [ -z "$docker_provider" ]; then
+    echo "DOCKER_PROVIDER is empty"
+    exit 1
+elif [ -z "$docker_registry" ]; then
+    echo "DOCKER_REGISTRY is empty"
+    exit 1    
+elif [ -z "$docker_auth_user" ]; then
+    echo "DOCKER_AUTH_USER is empty"
+    exit 1
+elif [ -z "$docker_auth_secret" ]; then
+    echo "DOCKER_AUTH_SECRET is empty"
+    exit 1    
+fi
+
+export DOCKER_REGISTRY=$docker_registry
+export DOCKER_AUTH_USER=$docker_auth_user
+export DOCKER_AUTH_SECRET=$docker_auth_secret
+export DOCKER_ROLE=$docker_role
+
+docker_build_args="--build-arg VERSION=\"${version}\" --build-arg APP_VERSION=\"${version}\" --build-arg IMAGE_VERSION=\"${version}\""
+
+# ssh
+if [ $ssh -eq 1 ]; then
+    if [ -e "$ssh_file" ]; then
+        ssh_private_key=$(cat $ssh_file | base64)
+        ssh_private_key="base64:${ssh_private_key}"
+        docker_build_args="$docker_build_args --build-arg \"SSH_PRIVATE_KEY=${ssh_private_key}\""
+    else
+        echo "Cannot find ssh private key ($ssh_file)"
+        exit 1
+    fi
+fi
+
+# github
+if [ $github -eq 1 ]; then    
+    github_token=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_GITHUB_KEY}
+    github_token=${github_token:-$GITHUB_TOKEN}
+    docker_build_args="$docker_build_args --build-arg \"GITHUB_TOKEN=${github_token}\""
+    if [ -z $github_token ]; then
+        echo "Cannot find GITHUB_TOKEN"
+        exit 1
+    fi
+fi
+
+# nuget
+nuget_provider=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NUGET_PROVIDER}
+if [ $nuget -gt 0 || "$nuget_provider" != "" ]; then
+    if [ "$nuget_provider" = "github" ]; then
+        nuget_baseurl=${GITHUB_PACKAGE_NUGET_PUSHURL}
+        nuget_auth_user=${GITHUB_PACKAGE_NUGET_USER}
+        nuget_auth_secret=${GITHUB_PACKAGE_NUGET_SECRET}
+    elif [ "$nuget_provider" = "jfrog" ]; then
+        nuget_baseurl=${JFROG_NUGET_PUSHURL}
+        nuget_auth_user=${JFROG_NUGET_USER}
+        nuget_auth_secret=${JFROG_NUGET_SECRET}    
+    else
+        nuget_baseurl=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_NUGET_URL}
+        nuget_auth_user=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_NUGET_AUTH_USER}
+        nuget_auth_secret=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_NUGET_AUTH_SECRET}
+    fi
+    nuget_baseurl=${nuget_baseurl:-$NUGET_BASEURL}
+    nuget_auth_user=${nuget_auth_user:-$NUGET_AUTH_USER}
+    nuget_auth_secret=${nuget_auth_secret:-$NUGET_AUTH_SECRET}
+
+    if [ -z "$nuget_baseurl" ]; then
+        echo "NUGET_BASEURL is empty"
+        exit 1
+    elif [ -z "$nuget_pushurl" ]; then
+        echo "NUGET_PUSHURL is empty"
+        exit 1    
+    elif [ -z "$nuget_auth_user" ]; then
+        echo "NUGET_AUTH_USER is empty"
+        exit 1
+    elif [ -z "$nuget_auth_secret" ]; then
+        echo "NUGET_AUTH_SECRET is empty"
+        exit 1    
+    fi    
+
+    docker_build_args="$docker_build_args --build-arg NUGET_BASEURL=\"${nuget_baseurl}\" --build-arg NUGET_AUTH_USER=\"${nuget_auth_user}\" --build-arg NUGET_AUTH_KEY=\"${nuget_auth_secret}\""
+fi
+
+function build_execute() {
+    local args="--rm $docker_build_args"
+
+    if [ $nocache -gt 0 ]; then
+        $args="$args --nocache"
+    fi
+
+    $docker build -f $docker_file $args $image:$tag
+}
+
+if [ $debug -gt 0 ]; then
+    dotnet_execute --info
+    dotnet_execute --list-runtimes
+    dotnet_execute --list-sdks
+    dotnet_execute nuget --version
+fi
+
+# build
+
+build_execute
