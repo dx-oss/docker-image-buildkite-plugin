@@ -163,10 +163,10 @@ elif [ "$docker_provider" = "jfrog" ]; then
     docker_auth_secret=${JFROG_DOCKER_SECRET}
     image=${image:="${namespace}/${name}"}
 elif [ "$docker_provider" = "github" ]; then
-    docker_registry=${GITHUB_PACKAGE_DOCKER_REGISTRY}
+    docker_registry="${GITHUB_PACKAGE_DOCKER_REGISTRY}/${git_owner}/${git_repo}"
     docker_auth_user=${GITHUB_PACKAGE_DOCKER_USER}
-    docker_auth_secret=${GITHUB_PACKAGE_DOCKER_SECRET}    
-    image=${image:="${git_owner}/${git_repo}/${name}"}    
+    docker_auth_secret=${GITHUB_PACKAGE_DOCKER_SECRET}
+    image=${image:-$name}
 fi
 docker_registry=${docker_registry:-$DOCKER_REGISTRY}
 docker_auth_user=${docker_auth_user:-$DOCKER_AUTH_USER}
