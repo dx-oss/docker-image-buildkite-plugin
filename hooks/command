@@ -111,21 +111,33 @@ if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
     docker_registry_name=${docker_registry_name:-$BUILDKITE_PIPELINE_SLUG}
     docker_registry_name=${AWS_ECR_REGISTRY_NAME:-$docker_registry_name}
 
-    docker_auth_user=${AWS_ECR_AUTH_USER}
-    docker_auth_secret=${AWS_ECR_AUTH_SECRET}
+    docker_auth_user=${AWS_ECR_AUTH_USER:-$AWS_ACCESS_KEY_ID}
+    docker_auth_secret=${AWS_ECR_AUTH_SECRET:-$AWS_SECRET_ACCESS_KEY}
     docker_role=${AWS_ECR_AUTH_ROLE}
-    docker_assume_role_required=1
+    docker_registry_region=${docker_registry_region:-$AWS_DEFAULT_REGION}
+    #docker_assume_role_required=1
     
     image=${image:="${namespace}/${name}"}
+
+    export AWS_ACCESS_KEY_ID=${docker_auth_user}
+    export AWS_SECRET_ACCESS_KEY=${docker_auth_secret}
+    export AWS_DEFAULT_REGION=${docker_registry_region}
 
     # check ecr
     if [ "$docker_registry" == "" ]; then
         docker_registry=$(aws ecr describe-repositories --repository-names "${docker_registry_name}" --output text --query 'repositories[0].repositoryUri' || true)
         if [ "$docker_registry" == "" ]; then
+            echo "Create registry ${docker_registry_name}"
             aws ecr create-repository --repository-name "${docker_registry_name}"
             docker_registry=$(aws ecr describe-repositories --repository-names "${docker_registry_name}" --output text --query 'repositories[0].repositoryUri' || true)            
         fi
-    fi    
+        if [ "$docker_registry" == "" ]; then
+            $docker_registry="${docker_registry_account}.dkr.ecr.${docker_registry_region}.amazonaws.com"
+        fi
+    fi
+
+    echo "Login [${docker_registry}]"
+    aws ecr get-login-password --region ${docker_registry_region} | docker login --username AWS --password-stdin ${docker_registry}
 elif [ "$docker_provider" = "jfrog" ]; then
     docker_registry=${JFROG_DOCKER_REGISTRY}
     docker_auth_user=${JFROG_DOCKER_USER}
