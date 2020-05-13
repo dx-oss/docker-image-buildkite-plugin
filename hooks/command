@@ -42,7 +42,7 @@ git_url=https://github.com/${git_owner}/${git_repo}/
 # image
 name=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NAME:-$git_repo}
 namespace=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NAMESPACE:-$git_owner}
-image=${BUILDKITE_PLUGIN_DOCKER_IMAGE_IMAGE}
+image=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_IMAGE}
 if [ -z "$image" ]; then
     image="${namespace}/${name}"
 fi
