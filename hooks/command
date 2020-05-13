@@ -163,7 +163,7 @@ if [ $github -eq 1 ]; then
 fi
 
 # nuget
-nuget_provider=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NUGET_PROVIDER:-""}
+nuget_provider=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NUGET_PROVIDER:-$BUILDKITE_PLUGIN_DOCKER_IMAGE_NUGET}
 if [ $nuget -gt 0 ] || [ "$nuget_provider" != "" ]; then
     if [ "$nuget_provider" == "github" ]; then
         nuget_baseurl=${GITHUB_PACKAGE_NUGET_PUSHURL}
