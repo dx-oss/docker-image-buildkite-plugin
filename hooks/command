@@ -47,6 +47,8 @@ git_url=https://github.com/${git_owner}/${git_repo}/
 name=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NAME:-$git_repo}
 namespace=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NAMESPACE:-$git_owner}
 image=${BUILDKITE_PLUGIN_DOCKER_IMAGE_IMAGE:-""}
+image_push=""
+image_tag=""
 
 # tags
 tag_sha=$(git rev-parse --short $BUILDKITE_COMMIT)
@@ -100,10 +102,9 @@ fi
 # docker - check if a key is set and it exists in env, if not use default env
 docker_file=$file
 docker_assume_role_required=0
-docker_login=0
+docker_logged_in=0
 docker_role=${BUILDKITE_PLUGIN_DOCKER_IMAGE_ROLE:-""}
 docker_registry=${BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY}
-docker_registry_name=${BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY_NAME}
 docker_registry_region=${BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY_REGION}
 docker_registry_account=${BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY_ACCOUNT}
 docker_auth_user=${BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_USER}
@@ -125,16 +126,16 @@ if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
     ###
 
     docker_registry=${AWS_ECR_REGISTRY:-$docker_registry}
-    docker_registry_name=${docker_registry_name:-$AWS_ECR_REGISTRY_NAME}
-    docker_registry_name=${docker_registry_name:-$BUILDKITE_PIPELINE_SLUG}
+    docker_registry_name=${name:-$AWS_ECR_REGISTRY_NAME}
+    docker_registry_name=${name:-$BUILDKITE_PIPELINE_SLUG}
 
     docker_auth_user=${AWS_ECR_AUTH_USER:-$AWS_ACCESS_KEY_ID}
     docker_auth_secret=${AWS_ECR_AUTH_SECRET:-$AWS_SECRET_ACCESS_KEY}
     docker_role=${AWS_ECR_AUTH_ROLE}
     docker_registry_region=${docker_registry_region:-$AWS_DEFAULT_REGION}
-    #docker_assume_role_required=1
+    docker_assume_role_required=0
     
-    image=${image:=$name}
+    image=${image:=$docker_registry_name}
 
     export AWS_ACCESS_KEY_ID=${docker_auth_user}
     export AWS_SECRET_ACCESS_KEY=${docker_auth_secret}
@@ -154,20 +155,26 @@ if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
     fi
 
     docker_registry="${docker_registry}/${docker_registry_name}"
+    image_tag=$image
+    image_push="${docker_registry}/$image"
 
     echo "Login [${docker_registry}]"
     $awscli ecr get-login-password --region ${docker_registry_region} | docker login --username AWS --password-stdin ${docker_registry}
-    docker_login=1
+    docker_logged_in=1
 elif [ "$docker_provider" = "jfrog" ]; then
     docker_registry=${JFROG_DOCKER_REGISTRY}
     docker_auth_user=${JFROG_DOCKER_USER}
     docker_auth_secret=${JFROG_DOCKER_SECRET}
     image=${image:="${namespace}/${name}"}
+    image_tag=$image
+    image_push=$image
 elif [ "$docker_provider" = "github" ]; then
     docker_registry=${GITHUB_PACKAGE_DOCKER_REGISTRY}
     docker_auth_user=${GITHUB_PACKAGE_DOCKER_USER}
     docker_auth_secret=${GITHUB_PACKAGE_DOCKER_SECRET}    
     image=${image:="${git_owner}/${git_repo}/${name}"}
+    image_tag=$image
+    image_push=$image    
 fi
 docker_registry=${docker_registry:-$DOCKER_REGISTRY}
 docker_auth_user=${docker_auth_user:-$DOCKER_AUTH_USER}
@@ -192,7 +199,7 @@ export DOCKER_AUTH_USER=$docker_auth_user
 export DOCKER_AUTH_SECRET=$docker_auth_secret
 export DOCKER_ROLE=$docker_role
 
-if [ $docker_login -eq 0 ]; then
+if [ $docker_logged_in -eq 0 ]; then
     if [ "${DOCKER_ROLE}" == "" ]; then 
         echo "Login into ${DOCKER_REGISTRY}"
         echo "${DOCKER_AUTH_SECRET}" | $docker login -u "${DOCKER_AUTH_USER}" --password-stdin "${DOCKER_REGISTRY}"
@@ -285,8 +292,8 @@ $buildkite_agent annotate --style info "Docker image build [$BUILDKITE_PIPELINE_
 
 for t in $tags
 do
-    $docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_registry/$image:$t
-    $docker push $docker_registry/$image:$t
+    $docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $image_tag:$t $docker_registry
+    $docker push $docker_registry/$image_push:$t
 
     $buildkite_agent annotate --style info "Docker image push [$docker_registry/$image:$t]"
 done
