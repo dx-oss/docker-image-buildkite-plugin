@@ -146,7 +146,7 @@ export DOCKER_ROLE=$docker_role
 
 if [ "${DOCKER_ROLE}" == "" ]; then 
     echo "Login into ${DOCKER_REGISTRY}"
-    echo "${DOCKER_AUTH_SECRET}"" [ $docker login -u "${DOCKER_AUTH_USER}"" --password-stdin "${DOCKER_REGISTRY}"
+    echo "${DOCKER_AUTH_SECRET}" | $docker login -u "${DOCKER_AUTH_USER}" --password-stdin "${DOCKER_REGISTRY}"
 else
     echo "TODO: fix assume role"
     exit 1
