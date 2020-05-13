@@ -34,6 +34,7 @@ fi
 version_meta=`$buildkite_agent meta-data get version || true`
 version=${BUILDKITE_PLUGIN_DOCKER_IMAGE_VERSION:-$version_meta}
 version=${version:-$BUILDKITE_TAG}
+version=${version:-""}
 
 # git
 git_owner=$(echo "$BUILDKITE_REPO" | cut -d: -f 2 | cut -d/ -f 1)
