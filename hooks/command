@@ -29,13 +29,10 @@ if [ $debug -gt 0 ]; then
     pwd
 fi
 
+# version
 version_meta=`$buildkite_agent meta-data get version || true`
 version=${BUILDKITE_PLUGIN_DOCKER_IMAGE_VERSION:-$version_meta}
 version=${version:-$BUILDKITE_TAG}
-if [ -z "$version" ]; then
-    echo "VERSION/BUILDKITE_TAG is empty"
-    exit 1
-fi
 
 # git
 git_owner=$(echo "$BUILDKITE_REPO" | cut -d: -f 2 | cut -d/ -f 1)
@@ -50,6 +47,7 @@ if [ -z "$image" ]; then
     image="${namespace}/${name}"
 fi
 
+# tags
 tag_sha=$(git rev-parse --short $BUILDKITE_COMMIT)
 #tag=${BUILDKITE_BUILD_ID:-$tag_sha}
 tag=$tag_sha
