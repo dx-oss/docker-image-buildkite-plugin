@@ -141,6 +141,7 @@ export DOCKER_AUTH_USER=$docker_auth_user
 export DOCKER_AUTH_SECRET=$docker_auth_secret
 export DOCKER_ROLE=$docker_role
 
+docker_build_args=""
 if [ "${version}" != "" ]; then
     docker_build_args="--build-arg=\"VERSION=${version}\" --build-arg=\"APP_VERSION=${version}\" --build-arg=\"IMAGE_VERSION=${version}\""
 fi
@@ -199,7 +200,7 @@ if [ $nuget != "" ] || [ "$nuget_provider" != "" ]; then
         exit 1    
     fi    
 
-    docker_build_args="$docker_build_args --build-arg=\"NUGET_BASEURL=${nuget_baseurl}\" --build-arg=\"NUGET_AUTH_USER=${nuget_auth_user}\" --build-arg=\"NUGET_AUTH_KEY=${nuget_auth_secret}\""
+    docker_build_args="${docker_build_args} --build-arg=\"NUGET_BASEURL=${nuget_baseurl}\" --build-arg=\"NUGET_AUTH_USER=${nuget_auth_user}\" --build-arg=\"NUGET_AUTH_KEY=${nuget_auth_secret}\""
 fi
 
 # build
@@ -208,7 +209,8 @@ args="--rm"
 if [ $nocache -gt 0 ]; then
     args="${args} --no-cache --pull"
 fi
-$docker build $docker_build_args $args -f $docker_file -t $BUILDKITE_PIPELINE_SLUG:$tag_sha .
+$docker build ${docker_build_args} $args -f $docker_file -t $BUILDKITE_PIPELINE_SLUG:$tag_sha .
+echo "$docker build ${docker_build_args} $args -f $docker_file -t $BUILDKITE_PIPELINE_SLUG:$tag_sha ."
 
 $buildkite_agent annotate --style info "Docker image build [$BUILDKITE_PIPELINE_SLUG:$tag_sha]"
 
