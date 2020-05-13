@@ -222,10 +222,13 @@ rm build
 
 $buildkite_agent annotate --style info "Docker image build [$BUILDKITE_PIPELINE_SLUG:$tag_sha]"
 
-for t in $tags {
+for t in $tags
+do
     $docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_registry/$image:$t
     $docker push $docker_registry/$image:$t
-}
+
+    $buildkite_agent annotate --style info "Docker image push [$docker_registry/$image:$t]"
+done
 
 $buildkite_agent annotate --style success "Docker image push [$docker_registry/$image:$tags]"
 
