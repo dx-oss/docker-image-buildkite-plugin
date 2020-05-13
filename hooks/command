@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # https://buildkite.com/docs/pipelines/writing-build-scripts
-set -euo pipefail
+# https://buildkite.com/docs/pipelines/writing-build-scripts#configuring-bash
+set -eo pipefail
 
 # common
 
@@ -17,7 +18,7 @@ buildkite_agent=${BUILDKITE_PLUGIN_DOCKER_IMAGE_AGENT:-buildkite-agent}
 docker=${BUILDKITE_PLUGIN_DOCKER_IMAGE_DOCKER:-docker}
 debug=${BUILDKITE_PLUGIN_DOCKER_IMAGE_DEBUG:-0}
 if [ $debug -gt 0 ]; then
-    set -euox pipefail
+    set -eox pipefail
 
     if [ $debug -eq 2 ]; then
         env
@@ -47,7 +48,6 @@ image=${BUILDKITE_PLUGIN_DOCKER_IMAGE_IMAGE:-"${namespace}/${name}"}
 # tags
 tag_sha=$(git rev-parse --short $BUILDKITE_COMMIT)
 #tag=${BUILDKITE_BUILD_ID:-$tag_sha}
-tag=$tag_sha
 
 tags=${BUILDKITE_PLUGIN_DOCKER_IMAGE_TAGS:-""}
 if [ -z "$tags" ]; then
@@ -70,7 +70,6 @@ if [ -z "$tags" ]; then
         tags="${version}"
     fi
 fi
-echo "tags: $tags"
 if [ -z "$tags" ]; then
     echo "Tags are required"
     exit 1    
@@ -93,10 +92,10 @@ fi
 docker_file=$file
 docker_assume_role_required=0
 docker_role=${BUILDKITE_PLUGIN_DOCKER_IMAGE_ROLE:-""}
-docker_registry=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY:-""}
-docker_auth_user=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_USER:-""}
-docker_auth_secret=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_SECRET:-""}
-docker_provider=${BUILDKITE_PLUGIN_DOCKER_IMAGE_PROVIDER:-$NUGET_PROVIDER}
+docker_registry=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY}
+docker_auth_user=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_USER}
+docker_auth_secret=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_SECRET}
+docker_provider=${BUILDKITE_PLUGIN_DOCKER_IMAGE_PROVIDER:-$DOCKER_PROVIDER}
 if [ "$docker_provider" = "ecr" || "$docker_provider" = "aws" ]; then
     docker_registry=${GITHUB_PACKAGE_NUGET_BASEURL}
     docker_auth_user=${GITHUB_PACKAGE_NUGET_USER}
@@ -217,3 +216,7 @@ fi
 # build
 
 build_execute
+
+for t in tags {
+    $docker tag $image:$tag_sha $image:$t
+}
