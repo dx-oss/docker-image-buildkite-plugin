@@ -59,9 +59,15 @@ if [ -z "$tags" ]; then
 
         if [ "$tag" == "" ]; then
             break
+        elif [ "$tag" == "VERSION" ] && [ "$version" == "" ]; then
+            echo "A tag with VERSION cannot be set when the version variable is empty"
+            exit 1
+        elif [ "$tag" == "SHA" ] && [ "$tag_sha" == "" ]; then
+            echo "A tag with SHA cannot be set when the tag_sha variable is empty"
+            exit 1
         fi
 
-        tag=$(echo "$tag" | sed "s/SHORT/${tag_sha}/gi" | sed "s/VERSION/${version}/gi")
+        tag=$(echo "$tag" | sed "s/SHA/${tag_sha}/gi" | sed "s/VERSION/${version}/gi")
         if [ "$tag" != "" ]; then
             tags="${tags} ${tag}"
         fi
