@@ -203,11 +203,11 @@ args="--rm $docker_build_args"
 if [ $nocache -gt 0 ]; then
     $args="$args --nocache"
 fi
-echo $docker build --pull -f $docker_file $args $BUILDKITE_PIPELINE_SLUG:$tag_sha .
+$docker build $args --pull -f $docker_file $BUILDKITE_PIPELINE_SLUG:$tag_sha .
 
 for t in $tags {
-    echo $docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_registry/$image:$t
-    echo $docker push $docker_registry/$image:$t
+    $docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_registry/$image:$t
+    $docker push $docker_registry/$image:$t
 }
 
 $docker images
