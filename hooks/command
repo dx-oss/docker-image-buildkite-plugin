@@ -5,6 +5,7 @@
 set -eo pipefail
 
 # common
+aws --version
 
 pwd=$(pwd)
 dryrun=${BUILDKITE_PLUGIN_DOCKER_IMAGE_DRY:-0}
@@ -137,7 +138,8 @@ if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
     fi
 
     echo "Login [${docker_registry}]"
-    aws ecr get-login-password --region ${docker_registry_region} | docker login --username AWS --password-stdin ${docker_registry}
+    ecr_passwd=$(aws ecr get-login-password --region ${docker_registry_region})
+    docker login --username AWS --password-stdin ${docker_registry} <<< "$ecr_passwd"
 elif [ "$docker_provider" = "jfrog" ]; then
     docker_registry=${JFROG_DOCKER_REGISTRY}
     docker_auth_user=${JFROG_DOCKER_USER}
