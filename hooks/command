@@ -203,7 +203,7 @@ fi
 
 args="--rm"
 if [ $nocache -gt 0 ]; then
-    args="${args} --nocache --pull"
+    args="${args} --no-cache --pull"
 fi
 $docker build $docker_build_args $args -f $docker_file $BUILDKITE_PIPELINE_SLUG:$tag_sha .
 
