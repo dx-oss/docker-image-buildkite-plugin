@@ -8,7 +8,7 @@ set -eo pipefail
 
 pwd=$(pwd)
 dryrun=${BUILDKITE_PLUGIN_DOCKER_IMAGE_DRY:-0}
-nocache=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NOCACHE:-0}
+nocache=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NOCACHE:-1}
 ssh=${BUILDKITE_PLUGIN_DOCKER_IMAGE_SSH:-0}
 ssh_file=${BUILDKITE_PLUGIN_DOCKER_IMAGE_SSH_FILE:-"~/.ssh/id_rsa"}
 github=${BUILDKITE_PLUGIN_DOCKER_IMAGE_GITHUB:-0}
@@ -135,7 +135,9 @@ export DOCKER_AUTH_USER=$docker_auth_user
 export DOCKER_AUTH_SECRET=$docker_auth_secret
 export DOCKER_ROLE=$docker_role
 
-docker_build_args="--build-arg=\"VERSION=${version}\" --build-arg=\"APP_VERSION=${version}\" --build-arg=\"IMAGE_VERSION=${version}\""
+if [ "${version}" != "" ]; then
+    docker_build_args="--build-arg=\"VERSION=${version}\" --build-arg=\"APP_VERSION=${version}\" --build-arg=\"IMAGE_VERSION=${version}\""
+fi
 
 # ssh
 if [ $ssh -eq 1 ]; then
@@ -152,12 +154,12 @@ fi
 # github
 if [ $github -eq 1 ]; then    
     github_token=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_GITHUB_KEY}
-    github_token=${github_token:-$GITHUB_TOKEN}
-    docker_build_args="$docker_build_args --build-arg=\"GITHUB_TOKEN=${github_token}\""
+    github_token=${github_token:-$GITHUB_TOKEN}    
     if [ -z $github_token ]; then
         echo "Cannot find GITHUB_TOKEN"
         exit 1
     fi
+    docker_build_args="$docker_build_args --build-arg=\"GITHUB_TOKEN=${github_token}\""
 fi
 
 # nuget
@@ -199,11 +201,11 @@ fi
 
 # build
 
-args="--rm $docker_build_args"
+args="--rm"
 if [ $nocache -gt 0 ]; then
-    $args="$args --nocache"
+    $args="$args --nocache --pull"
 fi
-$docker build $args --pull -f $docker_file $BUILDKITE_PIPELINE_SLUG:$tag_sha .
+$docker build $docker_build_args $args -f $docker_file $BUILDKITE_PIPELINE_SLUG:$tag_sha .
 
 for t in $tags {
     $docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_registry/$image:$t
