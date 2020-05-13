@@ -188,13 +188,13 @@ if [ $nuget -gt 0 ] || [ "$nuget_provider" != "" ]; then
     nuget_auth_user=${nuget_auth_user:-$NUGET_AUTH_USER}
     nuget_auth_secret=${nuget_auth_secret:-$NUGET_AUTH_SECRET}
 
-    if [ -z "$nuget_baseurl" ]; then
+    if [ "$nuget_baseurl" == "" ]; then
         echo "NUGET_BASEURL is empty"
         exit 1    
-    elif [ -z "$nuget_auth_user" ]; then
+    elif [ "$nuget_auth_user" == "" ]; then
         echo "NUGET_AUTH_USER is empty"
         exit 1
-    elif [ -z "$nuget_auth_secret" ]; then
+    elif [ "$nuget_auth_secret" == "" ]; then
         echo "NUGET_AUTH_SECRET is empty"
         exit 1    
     fi    
