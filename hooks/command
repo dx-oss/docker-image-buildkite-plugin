@@ -213,7 +213,12 @@ args="--rm"
 if [ $nocache -gt 0 ]; then
     args+=' --no-cache --pull'
 fi
-$docker build ${docker_build_args} $args -f $docker_file -t $BUILDKITE_PIPELINE_SLUG:$tag_sha .
+
+echo "$docker build ${docker_build_args} $args -f $docker_file -t $BUILDKITE_PIPELINE_SLUG:$tag_sha ." > build
+chmod +x build
+cat build
+./build
+rm .build
 
 $buildkite_agent annotate --style info "Docker image build [$BUILDKITE_PIPELINE_SLUG:$tag_sha]"
 
