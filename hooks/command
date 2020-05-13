@@ -273,6 +273,9 @@ args="--rm"
 if [ $nocache -gt 0 ]; then
     args+=' --no-cache --pull'
 fi
+if [ $debug -eq 0 ]; then
+    args+=' --quit'
+fi
 
 echo "$docker build ${docker_build_args} $args -f $docker_file -t $BUILDKITE_PIPELINE_SLUG:$tag_sha ." > build
 chmod +x build
