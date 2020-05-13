@@ -51,10 +51,10 @@ tag=$tag_sha
 
 tags=${BUILDKITE_PLUGIN_DOCKER_IMAGE_TAGS:-""}
 if [ -z "$tags" ]; then
-    for t in {1..10}
+    for t in {0..10}
     do
-        tag_name="BUILDKITE_PLUGIN_DOCKER_IMAGE_TAGS_$t"        
-        tag=${!tag_name}
+        tag_name="BUILDKITE_PLUGIN_DOCKER_IMAGE_TAGS_$t"
+        tag=${!tag_name:-""}
 
         if [ $tag = "" ]; then
             break
@@ -75,6 +75,7 @@ if [ -z "$tags" ]; then
         tags="${version}"
     fi
 fi
+echo "tags: $tags"
 if [ -z "$tags" ]; then
     echo "Tags are required"
     exit 1    
