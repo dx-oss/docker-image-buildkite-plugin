@@ -117,11 +117,13 @@ if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
     aws --version > aws_cli_ver.txt 2>&1
     cat aws_cli_ver.txt
     aws_cli_v1=$(grep -c "aws-cli/1" aws_cli_ver.txt)
-    if [ $aws_cli_v1 -gt 0 ]; then        
-        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-        unzip -q awscliv2.zip
-        awscli=${pwd}/aws/dist/aws        
-        $awscli --version
+    if [ $aws_cli_v1 -gt 0 ]; then
+        if [ ! -x "aws/dist/aws" ]; then
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip -q awscliv2.zip
+            awscli=${pwd}/aws/dist/aws
+            $awscli --version
+        fi
     fi
     ###
 
