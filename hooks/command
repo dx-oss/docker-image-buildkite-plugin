@@ -102,12 +102,12 @@ docker_file=$file
 docker_assume_role_required=0
 docker_login=0
 docker_role=${BUILDKITE_PLUGIN_DOCKER_IMAGE_ROLE:-""}
-docker_registry=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY}
-docker_registry_name=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY_NAME}
-docker_registry_region=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY_REGION}
-docker_registry_account=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY_ACCOUNT}
-docker_auth_user=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_USER}
-docker_auth_secret=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_SECRET}
+docker_registry=${BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY}
+docker_registry_name=${BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY_NAME}
+docker_registry_region=${BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY_REGION}
+docker_registry_account=${BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY_ACCOUNT}
+docker_auth_user=${BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_USER}
+docker_auth_secret=${BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_SECRET}
 docker_provider=${BUILDKITE_PLUGIN_DOCKER_IMAGE_PROVIDER:-$DOCKER_PROVIDER}
 if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
     ###
@@ -125,8 +125,8 @@ if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
     ###
 
     docker_registry=${AWS_ECR_REGISTRY:-$docker_registry}
+    docker_registry_name=${docker_registry_name:-$AWS_ECR_REGISTRY_NAME}
     docker_registry_name=${docker_registry_name:-$BUILDKITE_PIPELINE_SLUG}
-    docker_registry_name=${AWS_ECR_REGISTRY_NAME:-$docker_registry_name}
 
     docker_auth_user=${AWS_ECR_AUTH_USER:-$AWS_ACCESS_KEY_ID}
     docker_auth_secret=${AWS_ECR_AUTH_SECRET:-$AWS_SECRET_ACCESS_KEY}
@@ -152,6 +152,8 @@ if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
             $docker_registry="${docker_registry_account}.dkr.ecr.${docker_registry_region}.amazonaws.com"
         fi
     fi
+
+    docker_registry="${docker_registry}/${docker_registry_name}"
 
     echo "Login [${docker_registry}]"
     $awscli ecr get-login-password --region ${docker_registry_region} | docker login --username AWS --password-stdin ${docker_registry}
