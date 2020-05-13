@@ -56,7 +56,7 @@ if [ -z "$tags" ]; then
         tag_name="BUILDKITE_PLUGIN_DOCKER_IMAGE_TAGS_$t"
         tag=${!tag_name:-""}
 
-        if [ $tag == "" ]; then
+        if [ "$tag" == "" ]; then
             break
         fi
 
@@ -96,7 +96,7 @@ docker_registry=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY}
 docker_auth_user=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_USER}
 docker_auth_secret=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_SECRET}
 docker_provider=${BUILDKITE_PLUGIN_DOCKER_IMAGE_PROVIDER:-$DOCKER_PROVIDER}
-if [ "$docker_provider" = "ecr" || "$docker_provider" = "aws" ]; then
+if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
     docker_registry=${GITHUB_PACKAGE_NUGET_BASEURL}
     docker_auth_user=${GITHUB_PACKAGE_NUGET_USER}
     docker_auth_secret=${GITHUB_PACKAGE_NUGET_SECRET}
@@ -211,7 +211,7 @@ if [ $nocache -gt 0 ]; then
 fi
 $docker build -f $docker_file $args $image:$tag_sha
 
-for t in tags {
+for t in $tags {
     $docker tag $image:$tag_sha $image:$t
 }
 
