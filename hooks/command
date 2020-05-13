@@ -143,9 +143,9 @@ export DOCKER_ROLE=$docker_role
 
 docker_build_args=""
 if [ "${version}" != "" ]; then
-    docker_build_args+="--build-arg=\"VERSION=${version}\""
-    docker_build_args+="--build-arg=\"APP_VERSION=${version}\""
-    docker_build_args+="--build-arg=\"IMAGE_VERSION=${version}\""
+    docker_build_args+=" --build-arg=\"VERSION=${version}\""
+    docker_build_args+=" --build-arg=\"APP_VERSION=${version}\""
+    docker_build_args+=" --build-arg=\"IMAGE_VERSION=${version}\""
 fi
 
 # ssh
@@ -153,7 +153,7 @@ if [ $ssh -eq 1 ]; then
     if [ -e "$ssh_file" ]; then
         ssh_private_key=$(cat $ssh_file | base64)
         ssh_private_key="base64:${ssh_private_key}"
-        docker_build_args+="--build-arg=\"SSH_PRIVATE_KEY=${ssh_private_key}\""
+        docker_build_args+=" --build-arg=\"SSH_PRIVATE_KEY=${ssh_private_key}\""
     else
         echo "Cannot find ssh private key ($ssh_file)"
         exit 1
@@ -168,7 +168,7 @@ if [ $github -eq 1 ]; then
         echo "Cannot find GITHUB_TOKEN"
         exit 1
     fi
-    docker_build_args+="--build-arg=\"GITHUB_TOKEN=${github_token}\""
+    docker_build_args+=" --build-arg=\"GITHUB_TOKEN=${github_token}\""
 fi
 
 # nuget
@@ -202,16 +202,16 @@ if [ $nuget != "" ] || [ "$nuget_provider" != "" ]; then
         exit 1    
     fi    
 
-    docker_build_args+="--build-arg=\"NUGET_BASEURL=${nuget_baseurl}\""
-    docker_build_args+="--build-arg=\"NUGET_AUTH_USER=${nuget_auth_user}\""
-    docker_build_args+="--build-arg=\"NUGET_AUTH_KEY=${nuget_auth_secret}\""
+    docker_build_args+=" --build-arg=\"NUGET_BASEURL=${nuget_baseurl}\""
+    docker_build_args+=" --build-arg=\"NUGET_AUTH_USER=${nuget_auth_user}\""
+    docker_build_args+=" --build-arg=\"NUGET_AUTH_KEY=${nuget_auth_secret}\""
 fi
 
 # build
 
 args="--rm"
 if [ $nocache -gt 0 ]; then
-    args+='--no-cache --pull'
+    args+=' --no-cache --pull'
 fi
 $docker build ${docker_build_args} $args -f $docker_file -t $BUILDKITE_PIPELINE_SLUG:$tag_sha .
 
