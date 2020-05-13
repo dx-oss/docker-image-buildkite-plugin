@@ -184,9 +184,6 @@ if [ $nuget -gt 0 ] || [ "$nuget_provider" != "" ]; then
 
     if [ -z "$nuget_baseurl" ]; then
         echo "NUGET_BASEURL is empty"
-        exit 1
-    elif [ -z "$nuget_pushurl" ]; then
-        echo "NUGET_PUSHURL is empty"
         exit 1    
     elif [ -z "$nuget_auth_user" ]; then
         echo "NUGET_AUTH_USER is empty"
