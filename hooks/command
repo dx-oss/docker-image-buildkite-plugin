@@ -205,7 +205,7 @@ args="--rm"
 if [ $nocache -gt 0 ]; then
     args="${args} --no-cache --pull"
 fi
-$docker build $docker_build_args $args -f $docker_file $BUILDKITE_PIPELINE_SLUG:$tag_sha .
+$docker build $docker_build_args $args -f $docker_file -t $BUILDKITE_PIPELINE_SLUG:$tag_sha .
 
 for t in $tags {
     $docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_registry/$image:$t
