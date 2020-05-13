@@ -196,16 +196,6 @@ if [ $nuget -gt 0 ] || [ "$nuget_provider" != "" ]; then
     docker_build_args="$docker_build_args --build-arg NUGET_BASEURL=\"${nuget_baseurl}\" --build-arg NUGET_AUTH_USER=\"${nuget_auth_user}\" --build-arg NUGET_AUTH_KEY=\"${nuget_auth_secret}\""
 fi
 
-function build_execute() {
-    local args="--rm $docker_build_args"
-
-    if [ $nocache -gt 0 ]; then
-        $args="$args --nocache"
-    fi
-
-    $docker build -f $docker_file $args $image:$tag
-}
-
 if [ $debug -gt 0 ]; then
     dotnet_execute --info
     dotnet_execute --list-runtimes
@@ -215,8 +205,14 @@ fi
 
 # build
 
-build_execute
+args="--rm $docker_build_args"
+if [ $nocache -gt 0 ]; then
+    $args="$args --nocache"
+fi
+$docker build -f $docker_file $args $image:$tag_sha
 
 for t in tags {
     $docker tag $image:$tag_sha $image:$t
 }
+
+$docker images
