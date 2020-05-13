@@ -109,16 +109,20 @@ docker_auth_user=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_USER}
 docker_auth_secret=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_SECRET}
 docker_provider=${BUILDKITE_PLUGIN_DOCKER_IMAGE_PROVIDER:-$DOCKER_PROVIDER}
 if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
+    ###
+    echo "TODO: REMOVE THIS WHEN WE HAVE THE AWS VERSION IN AGENT(!)"
+    awscli="aws"
     aws --version > aws_cli_ver.txt 2>&1
     cat aws_cli_ver.txt
     aws_cli_v1=$(grep -c "aws-cli/1" aws_cli_ver.txt)
-    if [ $aws_cli_v1 -gt 0 ]; then
-        echo "TODO: REMOVE THIS WHEN WE HAVE THE AWS VERSION IN AGENT(!)"
+    if [ $aws_cli_v1 -gt 0 ]; then        
         curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
         unzip awscliv2.zip
-        sudo ./aws/install
-        /usr/local/bin/aws --version
+        awscli=${pwd}/aws/dist/aws
+        
+        $awscli --version
     fi
+    ###
 
     docker_registry=${AWS_ECR_REGISTRY:-$docker_registry}
     docker_registry_name=${docker_registry_name:-$BUILDKITE_PIPELINE_SLUG}
@@ -138,11 +142,11 @@ if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
 
     # check ecr
     if [ "$docker_registry" == "" ]; then
-        docker_registry=$(aws ecr describe-repositories --repository-names "${docker_registry_name}" --output text --query 'repositories[0].repositoryUri' || true)
+        docker_registry=$($awscli ecr describe-repositories --repository-names "${docker_registry_name}" --output text --query 'repositories[0].repositoryUri' || true)
         if [ "$docker_registry" == "" ]; then
             echo "Create registry ${docker_registry_name}"
-            aws ecr create-repository --repository-name "${docker_registry_name}"
-            docker_registry=$(aws ecr describe-repositories --repository-names "${docker_registry_name}" --output text --query 'repositories[0].repositoryUri' || true)            
+            $awscli ecr create-repository --repository-name "${docker_registry_name}"
+            docker_registry=$($awscli ecr describe-repositories --repository-names "${docker_registry_name}" --output text --query 'repositories[0].repositoryUri' || true)            
         fi
         if [ "$docker_registry" == "" ]; then
             $docker_registry="${docker_registry_account}.dkr.ecr.${docker_registry_region}.amazonaws.com"
@@ -150,7 +154,7 @@ if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
     fi
 
     echo "Login [${docker_registry}]"
-    aws ecr get-login-password --region ${docker_registry_region} | docker login --username AWS --password-stdin ${docker_registry}
+    $awscli ecr get-login-password --region ${docker_registry_region} | docker login --username AWS --password-stdin ${docker_registry}
 elif [ "$docker_provider" = "jfrog" ]; then
     docker_registry=${JFROG_DOCKER_REGISTRY}
     docker_auth_user=${JFROG_DOCKER_USER}
