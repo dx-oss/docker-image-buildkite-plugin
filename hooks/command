@@ -27,6 +27,7 @@ if [ $debug -gt 0 ]; then
 
     $docker version
     $docker ps
+    aws --version
     whoami
     pwd
 fi
@@ -108,7 +109,8 @@ docker_auth_user=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_USER}
 docker_auth_secret=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_SECRET}
 docker_provider=${BUILDKITE_PLUGIN_DOCKER_IMAGE_PROVIDER:-$DOCKER_PROVIDER}
 if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
-    aws --version > aws_cli_ver.txt
+    aws --version > aws_cli_ver.txt 2>&1
+    cat aws_cli_ver.txt
     aws_cli_v1=$(grep -c "aws-cli/1" aws_cli_ver.txt)
     if [ $aws_cli_v1 -gt 0 ]; then
         echo "TODO: REMOVE THIS WHEN WE HAVE THE AWS VERSION IN AGENT(!)"
