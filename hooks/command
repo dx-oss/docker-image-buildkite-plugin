@@ -100,16 +100,32 @@ docker_file=$file
 docker_assume_role_required=0
 docker_role=${BUILDKITE_PLUGIN_DOCKER_IMAGE_ROLE:-""}
 docker_registry=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY}
+docker_registry_name=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY_NAME}
+docker_registry_region=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY_REGION}
+docker_registry_account=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY_ACCOUNT}
 docker_auth_user=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_USER}
 docker_auth_secret=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_SECRET}
 docker_provider=${BUILDKITE_PLUGIN_DOCKER_IMAGE_PROVIDER:-$DOCKER_PROVIDER}
 if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
-    docker_registry=${GITHUB_PACKAGE_NUGET_BASEURL}
-    docker_auth_user=${GITHUB_PACKAGE_NUGET_USER}
-    docker_auth_secret=${GITHUB_PACKAGE_NUGET_SECRET}
-    docker_role=${GITHUB_PACKAGE_NUGET_ROLE}
+    docker_registry=${AWS_ECR_REGISTRY:-$docker_registry}
+    docker_registry_name=${docker_registry_name:-$BUILDKITE_PIPELINE_SLUG}
+    docker_registry_name=${AWS_ECR_REGISTRY_NAME:-$docker_registry_name}
+
+    docker_auth_user=${AWS_ECR_AUTH_USER}
+    docker_auth_secret=${AWS_ECR_AUTH_SECRET}
+    docker_role=${AWS_ECR_AUTH_ROLE}
     docker_assume_role_required=1
+    
     image=${image:="${namespace}/${name}"}
+
+    # check ecr
+    if [ "$docker_registry" == "" ]; then
+        docker_registry=$(aws ecr describe-repositories --repository-names "${docker_registry_name}" --output text --query 'repositories[0].repositoryUri' || true)
+        if [ "$docker_registry" == "" ]; then
+            aws ecr create-repository --repository-name "${docker_registry_name}"
+            docker_registry=$(aws ecr describe-repositories --repository-names "${docker_registry_name}" --output text --query 'repositories[0].repositoryUri' || true)            
+        fi
+    fi    
 elif [ "$docker_provider" = "jfrog" ]; then
     docker_registry=${JFROG_DOCKER_REGISTRY}
     docker_auth_user=${JFROG_DOCKER_USER}

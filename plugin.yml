@@ -27,6 +27,15 @@ configuration:
   registry:
     name: string
     description: Registry host, default (REGISTRY_SERVER)
+  registry_name:
+    name: string
+    description: Registry name, default (REGISTRY_NAME) 
+  registry_region:
+    name: string
+    description: Registry region, default (REGISTRY_REGION)  
+  registry_account:
+    name: string
+    description: Registry account id, default (REGISTRY_ACCOUNT)
   auth_user:
     name: string
     description: Docker username key (AUTH_USER)
