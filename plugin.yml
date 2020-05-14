@@ -48,6 +48,9 @@ configuration:
   file:
     name: string
     description: Alternative Dockerfile
+  linter:
+    name: int
+    description: if value is greater then zero the plugin will execute linter to the dockerfile   
   wrkdir:
     name: string
     description: Alternative working directory
