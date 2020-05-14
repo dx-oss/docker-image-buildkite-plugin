@@ -74,10 +74,7 @@ configuration:
     description: Get the github token from this key instead of (GITHUB_TOKEN)
   nuget:
     name: string
-    description:  If not empty it would use nuget, it would set NUGET_PROVIDER
-  nuget_provider:
-    name: string
-    description: Get the nuget provider instead of (NUGET_PROVIDER)
+    description:  If not empty it would use nuget as provider
   nuget_baseurl:
     name: string
     description: Fetch nuget base url from a env key, default (NUGET_BASEURL)   
