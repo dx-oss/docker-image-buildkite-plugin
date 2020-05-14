@@ -73,8 +73,8 @@ configuration:
     name: string
     description: Get the github token from this key instead of (GITHUB_TOKEN)
   nuget:
-    name: int
-    description: if value is greater then zero the plugin would add nuget to build_arg
+    name: string
+    description:  If not empty it would use nuget, it would set NUGET_PROVIDER
   nuget_provider:
     name: string
     description: Get the nuget provider instead of (NUGET_PROVIDER)
