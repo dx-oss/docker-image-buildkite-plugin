@@ -252,7 +252,7 @@ if [ $github -eq 1 ]; then
 fi
 
 # nuget
-if [ $nuget != "" ]; then
+if [ "$nuget" != "" ]; then
     if [ "$nuget" == "github" ]; then
         nuget_baseurl=${GITHUB_PACKAGE_NUGET_BASEURL}
         nuget_auth_user=${GITHUB_PACKAGE_NUGET_USER}
