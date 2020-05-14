@@ -17,6 +17,9 @@ nuget=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NUGET:-0}
 linter=${BUILDKITE_PLUGIN_DOCKER_IMAGE_LINTER:-$DOCKER_LINTER_ENABLED}
 linter_image="hadolint/hadolint"
 
+build=${BUILDKITE_PLUGIN_DOCKER_IMAGE_BUILD:-1}
+push=${BUILDKITE_PLUGIN_DOCKER_IMAGE_PUSH:-0}
+
 buildkite_agent=${BUILDKITE_PLUGIN_DOCKER_IMAGE_AGENT:-buildkite-agent}
 docker=${BUILDKITE_PLUGIN_DOCKER_IMAGE_DOCKER:-docker}
 debug=${BUILDKITE_PLUGIN_DOCKER_IMAGE_DEBUG:-0}
@@ -108,6 +111,7 @@ fi
 # docker - check if a key is set and it exists in env, if not use default env
 docker_file=$file
 docker_assume_role_required=0
+docker_login=$push          # we dont need to login if not going to push
 docker_logged_in=0
 docker_role=${BUILDKITE_PLUGIN_DOCKER_IMAGE_ROLE:-""}
 docker_registry=${BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY}
@@ -162,9 +166,12 @@ if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
         fi
     fi
 
-    echo "Login [${docker_registry}]"
-    $awscli ecr get-login-password --region ${docker_registry_region} | docker login --username AWS --password-stdin ${docker_registry}
-    docker_logged_in=1
+    # Only login if docker_login is greater than zero
+    if [ $docker_login -gt 0 ]; then
+        echo "Login [${docker_registry}]"
+        $awscli ecr get-login-password --region ${docker_registry_region} | docker login --username AWS --password-stdin ${docker_registry}
+        docker_logged_in=1
+    fi
 elif [ "$docker_provider" = "jfrog" ]; then
     docker_registry=${JFROG_DOCKER_REGISTRY}
     docker_auth_user=${JFROG_DOCKER_USER}
@@ -199,7 +206,8 @@ export DOCKER_AUTH_USER=$docker_auth_user
 export DOCKER_AUTH_SECRET=$docker_auth_secret
 export DOCKER_ROLE=$docker_role
 
-if [ $docker_logged_in -eq 0 ]; then
+# We want only to login if needed
+if [ $docker_login -gt 0 ] && [ $docker_logged_in -eq 0 ]; then
     if [ "${DOCKER_ROLE}" == "" ]; then 
         echo "Login into ${DOCKER_REGISTRY}"
         echo "${DOCKER_AUTH_SECRET}" | $docker login -u "${DOCKER_AUTH_USER}" --password-stdin "${DOCKER_REGISTRY}"
@@ -285,25 +293,35 @@ if [ $debug -eq 0 ]; then
     args+=' --quiet'
 fi
 
-echo "$docker build ${docker_build_args} $args -f $docker_file -t $BUILDKITE_PIPELINE_SLUG:$tag_sha ." > build
-chmod +x build
-cat build
-./build
-rm build
+if [ $build -gt 0 ]; then
+    echo "$docker build ${docker_build_args} $args -f $docker_file -t $BUILDKITE_PIPELINE_SLUG:$tag_sha ." > build
+    chmod +x build
+    cat build
+    ./build
+    rm build
 
-$buildkite_agent annotate --style info "Docker image build [$BUILDKITE_PIPELINE_SLUG:$tag_sha]"
+    $buildkite_agent annotate --style info "Docker image build [$BUILDKITE_PIPELINE_SLUG:$tag_sha]"
+fi
 
-for t in $tags
-do
-    echo "$docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_registry/$image:$t"
-    $docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_registry/$image:$t
-    
-    echo "$docker push $docker_registry/$image:$t"
-    $docker push $docker_registry/$image:$t
+if [ $push -gt 0 ]; then
+    for t in $tags
+    do
+        echo "$docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_registry/$image:$t"
+        $docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_registry/$image:$t
+        
+        echo "$docker push $docker_registry/$image:$t"
+        $docker push $docker_registry/$image:$t
 
-    $buildkite_agent annotate --style info "Docker image push [$docker_registry/$image:$t]"
-done
+        $buildkite_agent annotate --style info "Docker image push [$docker_registry/$image:$t]"
+    done    
+fi
 
-$buildkite_agent annotate --style success "Docker image push [$docker_registry/$image:$tags]"
+if [ $push -gt 0 ] && [ $build -gt 0 ]; then
+    $buildkite_agent annotate --style success "Docker image build and push [$docker_registry/$image:$tags]"
+elif [ $build -gt 0 ]; then
+    $buildkite_agent annotate --style success "Docker image build [$docker_registry/$image:$tag_sha]"
+elif [ $push -gt 0 ]; then
+    $buildkite_agent annotate --style success "Docker image push [$docker_registry/$image:$tags]"
+fi
 
 $docker images
