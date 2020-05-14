@@ -14,6 +14,8 @@ ssh=${BUILDKITE_PLUGIN_DOCKER_IMAGE_SSH:-0}
 ssh_file=${BUILDKITE_PLUGIN_DOCKER_IMAGE_SSH_FILE:-"~/.ssh/id_rsa"}
 github=${BUILDKITE_PLUGIN_DOCKER_IMAGE_GITHUB:-0}
 nuget=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NUGET:-0}
+linter=${BUILDKITE_PLUGIN_DOCKER_IMAGE_LINTER:-1}
+linter_image="hadolint/hadolint"
 
 buildkite_agent=${BUILDKITE_PLUGIN_DOCKER_IMAGE_AGENT:-buildkite-agent}
 docker=${BUILDKITE_PLUGIN_DOCKER_IMAGE_DOCKER:-docker}
@@ -95,6 +97,12 @@ cd $wrkdir
 if [ ! -e "$file" ]; then
     echo "Dockerfile ($file) does not exists"
     exit 1
+fi
+
+# linter
+if [ $linter -gt 0 ]; then
+    echo "Checking ${file} with linter (${linter_image})"
+    $docker run --rm -i ${linter_image} < $file
 fi
 
 # docker - check if a key is set and it exists in env, if not use default env
