@@ -299,6 +299,9 @@ fi
 if [ $build -gt 0 ]; then
     if [ $docker_buildkit -gt 0 ]; then
         args+=" --ssh=default"
+        if [ $debug -gt 0 ]; then
+            args+=" --progress plain"
+        fi
     fi
 
     echo "$docker build ${docker_build_args} $args -f $docker_file -t $BUILDKITE_PIPELINE_SLUG:$tag_sha ." > build
