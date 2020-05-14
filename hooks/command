@@ -115,6 +115,7 @@ docker_file=$file
 docker_assume_role_required=0
 docker_login=$push          # we dont need to login if not going to push
 docker_logged_in=0
+docker_buildkit=${BUILDKITE_PLUGIN_DOCKER_IMAGE_BUILDKIT:-$DOCKER_BUILDKIT}
 docker_role=${BUILDKITE_PLUGIN_DOCKER_IMAGE_ROLE:-""}
 docker_registry=${BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY}
 docker_registry_region=${BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY_REGION}
@@ -207,6 +208,7 @@ export DOCKER_REGISTRY=$docker_registry
 export DOCKER_AUTH_USER=$docker_auth_user
 export DOCKER_AUTH_SECRET=$docker_auth_secret
 export DOCKER_ROLE=$docker_role
+export DOCKER_BUILDKIT=$docker_buildkit
 
 # We want only to login if needed
 if [ $docker_login -gt 0 ] && [ $docker_logged_in -eq 0 ]; then
@@ -296,6 +298,10 @@ if [ $debug -eq 0 ]; then
 fi
 
 if [ $build -gt 0 ]; then
+    if [ $docker_buildkit -gt 0 ]; then
+        args+=" --ssh=default"
+    fi
+
     echo "$docker build ${docker_build_args} $args -f $docker_file -t $BUILDKITE_PIPELINE_SLUG:$tag_sha ." > build
     chmod +x build
     cat build

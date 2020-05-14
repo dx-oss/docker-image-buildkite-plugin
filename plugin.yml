@@ -89,10 +89,13 @@ configuration:
     description: Nuget token key
   build:
     name: int
-    description: if value is greater then zero the plugin it would build (default 1)
+    description: if value is greater then zero the plugin it would build
   push:
     name: int
-    description: if value is greater then zero the plugin it would push (default 0)       
+    description: if value is greater then zero the plugin it would push   
+  buildkit:
+    name: int
+    description: if value is greater then zero the plugin would use buildkit    
   dry:
     name: int
     description: if value is greater then zero the plugin will not pusht the new release
