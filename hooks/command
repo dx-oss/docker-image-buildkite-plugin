@@ -234,6 +234,8 @@ if [ $ssh -eq 1 ]; then
         ssh_private_key=$(cat $ssh_file | base64)
         ssh_private_key="base64:${ssh_private_key}"
         docker_build_args+=" --build-arg=\"SSH_PRIVATE_KEY=${ssh_private_key}\""
+    elif [ "$SSH_PRIVATE_KEY" != "" ]; then
+        docker_build_args+=" --build-arg=\"SSH_PRIVATE_KEY=${SSH_PRIVATE_KEY}\""
     else
         echo "Cannot find ssh private key ($ssh_file)"
         exit 1
