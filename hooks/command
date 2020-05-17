@@ -99,6 +99,7 @@ if [ ! -d "$wrkdir" ]; then
     exit 1
 fi
 cd $wrkdir
+wrkdir=$(pwd)
 if [ ! -e "$file" ]; then
     echo "Dockerfile ($file) does not exists"
     exit 1
