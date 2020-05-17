@@ -134,7 +134,7 @@ if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
         if [ ! -x "aws/dist/aws" ]; then
             curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
             unzip -q awscliv2.zip
-            awscli=${pwd}/aws/dist/aws
+            awscli=${wrkdir}/aws/dist/aws
             $awscli --version
         fi
     fi
