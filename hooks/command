@@ -2,6 +2,7 @@
 
 # https://buildkite.com/docs/pipelines/writing-build-scripts
 # https://buildkite.com/docs/pipelines/writing-build-scripts#configuring-bash
+# https://ss64.com/bash/syntax-condition.html
 set -eo pipefail
 
 # common
@@ -181,6 +182,12 @@ elif [ "$docker_provider" = "jfrog" ]; then
     docker_auth_user=${JFROG_DOCKER_USER}
     docker_auth_secret=${JFROG_DOCKER_SECRET}
     image=${image:="${namespace}/${name}"}
+elif [ "$docker_provider" = "dockerhub" ] || [ "$docker_provider" = "docker" ]; then
+    DOCKER_REGISTRY=${DOCKERHUB_REGISTRY}
+    docker_registry=${DOCKERHUB_REGISTRY}
+    docker_auth_user=${DOCKERHUB_USER}
+    docker_auth_secret=${DOCKERHUB_SECRET}
+    image=${image:="${namespace}/${name}"}    
 elif [ "$docker_provider" = "github" ]; then
     docker_registry="${GITHUB_PACKAGE_DOCKER_REGISTRY}/${git_owner}/${git_repo}"
     docker_auth_user=${GITHUB_PACKAGE_DOCKER_USER}
