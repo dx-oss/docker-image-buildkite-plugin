@@ -318,32 +318,41 @@ if [ $build -gt 0 ]; then
 
     echo "$docker build ${docker_build_args} $args -f $docker_file -t $BUILDKITE_PIPELINE_SLUG:$tag_sha ." > build
     chmod +x build
-    cat build
+    if [ $debug -gt 1 ]; then
+        cat build
+    else
+        echo "docker build [$BUILDKITE_PIPELINE_SLUG:$tag_sha]"
+    fi
     ./build
     rm build
 
     $buildkite_agent annotate --style info "Docker image build [$BUILDKITE_PIPELINE_SLUG:$tag_sha]"
 fi
 
+docker_image="$docker_registry/$image"
+if [ "$docker_registry" == "" ]; then
+    docker_image="$image"
+fi
+
 if [ $push -gt 0 ]; then
     for t in $tags
     do
-        echo "$docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_registry/$image:$t"
-        $docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_registry/$image:$t
+        echo "$docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_image:$t"
+        $docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_image:$t
         
-        echo "$docker push $docker_registry/$image:$t"
-        $docker push $docker_registry/$image:$t
+        echo "$docker push $docker_image:$t"
+        $docker push $docker_image:$t
 
-        $buildkite_agent annotate --style info "Docker image push [$docker_registry/$image:$t]"
+        $buildkite_agent annotate --style info "Docker image push [$docker_image:$t]"
     done    
 fi
 
 if [ $push -gt 0 ] && [ $build -gt 0 ]; then
-    $buildkite_agent annotate --style success "Docker image build and push [$docker_registry/$image:$tags]"
+    $buildkite_agent annotate --style success "Docker image build and push [$docker_image:$tags]"
 elif [ $build -gt 0 ]; then
-    $buildkite_agent annotate --style success "Docker image build [$docker_registry/$image:$tag_sha]"
+    $buildkite_agent annotate --style success "Docker image build [$docker_image:$tag_sha]"
 elif [ $push -gt 0 ]; then
-    $buildkite_agent annotate --style success "Docker image push [$docker_registry/$image:$tags]"
+    $buildkite_agent annotate --style success "Docker image push [$docker_image:$tags]"
 fi
 
 $docker images
