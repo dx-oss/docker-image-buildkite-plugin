@@ -122,6 +122,7 @@ docker_role=${BUILDKITE_PLUGIN_DOCKER_IMAGE_ROLE:-""}
 docker_registry=${BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY}
 docker_registry_region=${BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY_REGION}
 docker_registry_account=${BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY_ACCOUNT}
+docker_registry_required=1
 docker_auth_user=${BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_USER}
 docker_auth_secret=${BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_SECRET}
 docker_provider=${BUILDKITE_PLUGIN_DOCKER_IMAGE_PROVIDER:-$DOCKER_PROVIDER}
@@ -185,6 +186,7 @@ elif [ "$docker_provider" = "jfrog" ]; then
 elif [ "$docker_provider" = "dockerhub" ] || [ "$docker_provider" = "docker" ]; then
     DOCKER_REGISTRY=${DOCKERHUB_REGISTRY}
     docker_registry=${DOCKERHUB_REGISTRY}
+    docker_registry_required=0
     docker_auth_user=${DOCKERHUB_USER}
     docker_auth_secret=${DOCKERHUB_SECRET}
     image=${image:="${namespace}/${name}"}    
@@ -201,7 +203,7 @@ docker_auth_secret=${docker_auth_secret:-$DOCKER_AUTH_SECRET}
 if [ -z "$docker_provider" ]; then
     echo "DOCKER_PROVIDER is empty"
     exit 1
-elif [ -z "$docker_registry" ]; then
+elif [ -z "$docker_registry" ] && [ $docker_registry_required -eq 1 ]; then
     echo "DOCKER_REGISTRY is empty"
     exit 1    
 elif [ -z "$docker_auth_user" ]; then
