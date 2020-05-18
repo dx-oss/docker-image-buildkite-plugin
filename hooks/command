@@ -127,6 +127,8 @@ docker_auth_user=${BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_USER}
 docker_auth_secret=${BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_SECRET}
 docker_provider=${BUILDKITE_PLUGIN_DOCKER_IMAGE_PROVIDER:-$DOCKER_PROVIDER}
 if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
+    echo "Using aws ecr"
+
     ###
     echo "TODO: REMOVE THIS WHEN WE HAVE THE AWS VERSION IN AGENT(!)"
     awscli="aws"
@@ -179,12 +181,16 @@ if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
         docker_logged_in=1
     fi
 elif [ "$docker_provider" = "jfrog" ]; then
+    echo "Using jfrog"
     docker_registry=${JFROG_DOCKER_REGISTRY}
     docker_auth_user=${JFROG_DOCKER_USER}
     docker_auth_secret=${JFROG_DOCKER_SECRET}
     image=${image:="${namespace}/${name}"}
 elif [ "$docker_provider" = "dockerhub" ] || [ "$docker_provider" = "docker" ]; then
+    echo "Using dockerhub"
     DOCKER_REGISTRY=${DOCKERHUB_REGISTRY}
+    DOCKER_AUTH_USER=${DOCKERHUB_USER}
+    DOCKER_AUTH_SECRET=${DOCKERHUB_SECRET}
     docker_registry=${DOCKERHUB_REGISTRY}
     docker_registry_required=0
     docker_auth_user=${DOCKERHUB_USER}
@@ -196,9 +202,12 @@ elif [ "$docker_provider" = "github" ]; then
     docker_auth_secret=${GITHUB_PACKAGE_DOCKER_SECRET}
     image=${image:-$name}
 fi
-docker_registry=${docker_registry:-$DOCKER_REGISTRY}
-docker_auth_user=${docker_auth_user:-$DOCKER_AUTH_USER}
-docker_auth_secret=${docker_auth_secret:-$DOCKER_AUTH_SECRET}
+
+if [ $docker_registry_required -eq 0 ]; then
+    docker_registry=${docker_registry:-$DOCKER_REGISTRY}
+    docker_auth_user=${docker_auth_user:-$DOCKER_AUTH_USER}
+    docker_auth_secret=${docker_auth_secret:-$DOCKER_AUTH_SECRET}
+fi
 
 if [ -z "$docker_provider" ]; then
     echo "DOCKER_PROVIDER is empty"
