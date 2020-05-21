@@ -249,11 +249,12 @@ if [ "${version}" != "" ]; then
 fi
 
 if [ "${docker_extra_build_args}" != "" ]; then
-    for buildarg in $docker_extra_build_args {
+    for buildarg in $docker_extra_build_args
+    do
         v=${!buildarg}
         v=${v:-""}
         docker_build_args+=" --build-arg=\"${buildarg}=${v}\""
-    }
+    done
 fi
 
 # ssh
