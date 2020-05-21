@@ -126,6 +126,7 @@ docker_registry_required=1
 docker_auth_user=${BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_USER}
 docker_auth_secret=${BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_SECRET}
 docker_provider=${BUILDKITE_PLUGIN_DOCKER_IMAGE_PROVIDER:-$DOCKER_PROVIDER}
+docker_extra_build_args=${BUILDKITE_PLUGIN_DOCKER_IMAGE_BUILDARGS}
 if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
     echo "Using aws ecr"
 
@@ -245,6 +246,14 @@ if [ "${version}" != "" ]; then
     docker_build_args+=" --build-arg=\"VERSION=${version}\""
     docker_build_args+=" --build-arg=\"APP_VERSION=${version}\""
     docker_build_args+=" --build-arg=\"IMAGE_VERSION=${version}\""
+fi
+
+if [ "${docker_extra_build_args}" != "" ]; then
+    for buildarg in $docker_extra_build_args {
+        v=${!buildarg}
+        v=${v:-""}
+        docker_build_args+=" --build-arg=\"${buildarg}=${v}\""
+    }
 fi
 
 # ssh
