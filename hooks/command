@@ -251,6 +251,8 @@ fi
 if [ "${docker_extra_build_args}" != "" ]; then
     for buildarg in $docker_extra_build_args
     do
+        echo "Add ${buildarg} to --build-arg"
+
         v=${!buildarg}
         v=${v:-""}
         docker_build_args+=" --build-arg=\"${buildarg}=${v}\""
