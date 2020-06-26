@@ -337,15 +337,21 @@ if [ $build -gt 0 ]; then
         fi
     fi
 
-    echo "$docker build ${docker_build_args} $args -f $docker_file -t $BUILDKITE_PIPELINE_SLUG:$tag_sha ." > build
-    chmod +x build
+    build_script="build-$$.sh"
+
     if [ $debug -gt 1 ]; then
-        cat build
+        echo "add [$docker build ${docker_build_args} $args -f $docker_file -t $BUILDKITE_PIPELINE_SLUG:$tag_sha .] to [$build_script]"
+    fi
+
+    echo "$docker build ${docker_build_args} $args -f $docker_file -t $BUILDKITE_PIPELINE_SLUG:$tag_sha ." > $build_script
+    chmod +x $build_script
+    if [ $debug -gt 1 ]; then
+        cat $build_script
     else
         echo "docker build [$BUILDKITE_PIPELINE_SLUG:$tag_sha]"
     fi
-    ./build
-    rm build
+    ./$build_script
+    rm $build_script
 
     $buildkite_agent annotate --style info "Docker image build [$BUILDKITE_PIPELINE_SLUG:$tag_sha]"
 fi
