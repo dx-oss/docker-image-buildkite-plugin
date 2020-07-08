@@ -62,6 +62,13 @@ tag_sha=$(git rev-parse --short $BUILDKITE_COMMIT)
 
 tags=${BUILDKITE_PLUGIN_DOCKER_IMAGE_TAGS:-""}
 if [ -z "$tags" ]; then
+    tag_branch=$BUILDKITE_BRANCH
+    tag_branch=${BUILDKITE_PLUGIN_DOCKER_IMAGE_TAG_BRANCH:-$tag_branch}
+    if [ "${tag_branch}" != "" ]; then
+        tag_branch=
+        tag_branch=$(echo "$tag_branch" | sed "s/_/-/gi" | sed "s/\./-/gi" | sed "s/\//-/gi")
+    fi
+
     for t in {0..10}
     do
         tag_name="BUILDKITE_PLUGIN_DOCKER_IMAGE_TAGS_$t"
@@ -75,9 +82,12 @@ if [ -z "$tags" ]; then
         elif [ "$tag" == "SHA" ] && [ "$tag_sha" == "" ]; then
             echo "A tag with SHA cannot be set when the tag_sha variable is empty"
             exit 1
+        elif [ "$tag" == "BRANCH" ] && [ "$tag_branch" == "" ]; then
+            echo "A tag with BRANCH cannot be set when the tag_branch variable is empty"
+            exit 1
         fi
 
-        tag=$(echo "$tag" | sed "s/SHA/${tag_sha}/gi" | sed "s/VERSION/${version}/gi")
+        tag=$(echo "$tag" | sed "s/SHA/${tag_sha}/gi" | sed "s/VERSION/${version}/gi" | sed "s/BRANCH/${tag_branch}/gi")
         if [ "$tag" != "" ]; then
             tags="${tags} ${tag}"
         fi
