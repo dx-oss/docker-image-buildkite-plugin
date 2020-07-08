@@ -65,7 +65,6 @@ if [ -z "$tags" ]; then
     tag_branch=$BUILDKITE_BRANCH
     tag_branch=${BUILDKITE_PLUGIN_DOCKER_IMAGE_TAG_BRANCH:-$tag_branch}
     if [ "${tag_branch}" != "" ]; then
-        tag_branch=
         tag_branch=$(echo "$tag_branch" | sed "s/_/-/gi" | sed "s/\./-/gi" | sed "s/\//-/gi")
     fi
 
