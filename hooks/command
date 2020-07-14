@@ -356,10 +356,7 @@ fi
 if [ $goreleaser -gt 0 ]; then
     export DOCKER_REPO1_URL=$docker_registry
 
-    goreleaser_args="--rm-dist"
-    if [ $build -eq 0 ]; then
-        goreleaser_args="${goreleaser_args} --snapshot"
-    fi
+    goreleaser_args="--rm-dist  --snapshot"
     if [ $debug -gt 0 ]; then
         goreleaser_args="${goreleaser_args} --debug"
     fi
