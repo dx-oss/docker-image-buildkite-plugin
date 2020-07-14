@@ -123,7 +123,7 @@ if [ $linter -gt 0 ]; then
     $docker run --rm -i ${linter_image} < $file
 fi
 
-if [ $goreleaser -gt ]; then
+if [ $goreleaser -gt 0 ]; then
     if [ -x "$goreleaser_binary" ]; then
         echo "$goreleaser_binary allreay installed"
     else
