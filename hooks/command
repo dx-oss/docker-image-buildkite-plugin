@@ -123,6 +123,18 @@ if [ $linter -gt 0 ]; then
     $docker run --rm -i ${linter_image} < $file
 fi
 
+if [ $goreleaser -gt ]; then
+    if [ -x "$goreleaser_binary" ]; then
+        echo "$goreleaser_binary allreay installed"
+    else
+        echo "install goreleaser"
+        curl -L "https://github.com/goreleaser/goreleaser/releases/download/v0.140.0/goreleaser_Linux_x86_64.tar.gz" -o "goreleaser.tar.gz"
+        tar -zxvf goreleaser.tar.gz
+        chmod +x goreleaser
+        mv goreleaser $goreleaser_binary
+    fi
+fi
+
 # docker - check if a key is set and it exists in env, if not use default env
 docker_file=$file
 docker_assume_role_required=0
