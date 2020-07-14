@@ -17,6 +17,7 @@ github=${BUILDKITE_PLUGIN_DOCKER_IMAGE_GITHUB:-0}
 nuget=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NUGET:-""}
 goreleaser=${BUILDKITE_PLUGIN_DOCKER_IMAGE_GORELEASER:-0}
 goreleaser_binary="/usr/local/bin/goreleaser"
+goreleaser_config=${BUILDKITE_PLUGIN_DOCKER_IMAGE_GORELEASER_CONFIG:-".goreleaser_buildkite.yml"}
 linter=${BUILDKITE_PLUGIN_DOCKER_IMAGE_LINTER:-$DOCKER_LINTER_ENABLED}
 linter_image="hadolint/hadolint"
 
@@ -356,7 +357,7 @@ fi
 if [ $goreleaser -gt 0 ]; then
     export DOCKER_REPO1_URL=$docker_registry
 
-    goreleaser_args="--rm-dist  --snapshot"
+    goreleaser_args="--rm-dist --snapshot -f ${goreleaser_config}"
     if [ $debug -gt 0 ]; then
         goreleaser_args="${goreleaser_args} --debug"
     fi
