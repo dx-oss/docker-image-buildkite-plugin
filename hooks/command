@@ -57,6 +57,7 @@ git_url=https://github.com/${git_owner}/${git_repo}/
 name=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NAME:-$git_repo}
 namespace=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NAMESPACE:-$git_owner}
 image=${BUILDKITE_PLUGIN_DOCKER_IMAGE_IMAGE:-""}
+goreleaser_image=${BUILDKITE_PLUGIN_DOCKER_IMAGE_GORELEASER_IMAGE:-"${image}:latest"}
 
 # tags
 tag_sha=$(git rev-parse --short $BUILDKITE_COMMIT)
@@ -224,7 +225,7 @@ elif [ "$docker_provider" = "github" ]; then
     docker_registry="${GITHUB_PACKAGE_DOCKER_REGISTRY}/${git_owner}/${git_repo}"
     docker_auth_user=${GITHUB_PACKAGE_DOCKER_USER}
     docker_auth_secret=${GITHUB_PACKAGE_DOCKER_SECRET}
-    image=${image:-$name}
+    image=${image:-$name}    
 fi
 
 if [ $docker_registry_required -eq 0 ]; then
@@ -353,6 +354,8 @@ if [ $debug -eq 0 ]; then
 fi
 
 if [ $goreleaser -gt 0 ]; then
+    export DOCKER_REPO1_URL=$docker_registry
+
     goreleaser_args="--rm-dist"
     if [ $build -eq 0 ]; then
         goreleaser_args="${goreleaser_args} --snapshot"
@@ -360,8 +363,12 @@ if [ $goreleaser -gt 0 ]; then
     if [ $debug -gt 0 ]; then
         goreleaser_args="${goreleaser_args} --debug"
     fi
+
     echo "execute [$goreleaser_binary $goreleaser_args]"
     $goreleaser_binary $goreleaser_args
+
+    echo "execute [$docker tag $goreleaser_image $BUILDKITE_PIPELINE_SLUG:$tag_sha]"
+    $docker tag $goreleaser_image $BUILDKITE_PIPELINE_SLUG:$tag_sha
 elif [ $build -gt 0 ]; then    
     if [ $docker_buildkit -gt 0 ]; then
         args+=" --ssh=default"
