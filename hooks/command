@@ -15,6 +15,8 @@ ssh=${BUILDKITE_PLUGIN_DOCKER_IMAGE_SSH:-0}
 ssh_file=${BUILDKITE_PLUGIN_DOCKER_IMAGE_SSH_FILE:-"~/.ssh/id_rsa"}
 github=${BUILDKITE_PLUGIN_DOCKER_IMAGE_GITHUB:-0}
 nuget=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NUGET:-""}
+goreleaser=${BUILDKITE_PLUGIN_DOCKER_IMAGE_GORELEASER:-0}
+goreleaser_binary="/usr/local/bin/goreleaser"
 linter=${BUILDKITE_PLUGIN_DOCKER_IMAGE_LINTER:-$DOCKER_LINTER_ENABLED}
 linter_image="hadolint/hadolint"
 
@@ -338,7 +340,17 @@ if [ $debug -eq 0 ]; then
     args+=' --quiet'
 fi
 
-if [ $build -gt 0 ]; then
+if [ $goreleaser -gt 0 ]; then
+    goreleaser_args="--rm-dist"
+    if [ $build -eq 0 ]; then
+        goreleaser_args="${goreleaser_args} --snapshot"
+    fi
+    if [ $debug -gt 0 ]; then
+        goreleaser_args="${goreleaser_args} --debug"
+    fi
+    echo "execute [$goreleaser_binary $goreleaser_args]"
+    $goreleaser_binary $goreleaser_args
+elif [ $build -gt 0 ]; then    
     if [ $docker_buildkit -gt 0 ]; then
         args+=" --ssh=default"
         if [ $debug -gt 0 ]; then
