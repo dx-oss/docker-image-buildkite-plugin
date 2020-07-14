@@ -131,7 +131,7 @@ if [ $goreleaser -gt 0 ]; then
         curl -L "https://github.com/goreleaser/goreleaser/releases/download/v0.140.0/goreleaser_Linux_x86_64.tar.gz" -o "goreleaser.tar.gz"
         tar -zxvf goreleaser.tar.gz
         chmod +x goreleaser
-        mv goreleaser $goreleaser_binary
+        goreleaser_binary="${wrkdir}/goreleaser"
     fi
 fi
 
