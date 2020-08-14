@@ -9,6 +9,7 @@ set -eo pipefail
 aws --version
 
 pwd=$(pwd)
+testcommand=${BUILDKITE_PLUGIN_DOCKER_IMAGE_TEST_COMMAND:-"echo no test command on image:"}
 dryrun=${BUILDKITE_PLUGIN_DOCKER_IMAGE_DRY:-0}
 nocache=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NOCACHE:-1}
 ssh=${BUILDKITE_PLUGIN_DOCKER_IMAGE_SSH:-0}
@@ -404,6 +405,9 @@ if [ $push -gt 0 ]; then
     do
         echo "$docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_image:$t"
         $docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_image:$t
+
+        echo running testcommand
+        $BUILDKITE_PLUGIN_DOCKER_IMAGE_TEST_COMMAND "$docker_image:$t"
         
         echo "$docker push $docker_image:$t"
         $docker push $docker_image:$t
