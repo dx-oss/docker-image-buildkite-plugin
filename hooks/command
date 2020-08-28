@@ -407,7 +407,7 @@ if [ $push -gt 0 ]; then
         $docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_image:$t
 
         echo running testcommand
-        $testcommand "$docker_image:$t"
+        $testcommand "$BUILDKITE_PIPELINE_SLUG:$tag_sha"
         
         echo "$docker push $docker_image:$t"
         $docker push $docker_image:$t
