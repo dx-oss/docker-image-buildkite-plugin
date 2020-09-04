@@ -397,18 +397,16 @@ elif [ $build -gt 0 ]; then
     $buildkite_agent annotate --style info "Docker image build [$BUILDKITE_PIPELINE_SLUG:$tag_sha]"
 fi
 
+# scan before push
+if [ $scan -gt 0 ]; then
+    i="$BUILDKITE_PIPELINE_SLUG:$tag_sha"
+    echo "Scan ${i} with ${trivy}" 
+    trivy image ${i}
+fi
+
 docker_image="$docker_registry/$image"
 if [ "$docker_registry" == "" ]; then
     docker_image="$image"
-fi
-
-# scan before push
-if [ $scan -gt 0 ]; then
-    echo "Scan ${file} with (${scan_image})" 
-    # scan_tmpdir=/tmp/scan/cache/$docker_image
-    # mkdir -p $scan_tmpdir    
-    #$docker run --rm -i -v $scan_tmpdir:/root/.cache/ ${scan_image} $BUILDKITE_PIPELINE_SLUG:$tag_sha
-    $docker run --rm -i ${scan_image} $BUILDKITE_PIPELINE_SLUG:$tag_sha
 fi
 
 if [ $push -gt 0 ]; then
