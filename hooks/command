@@ -21,6 +21,8 @@ goreleaser_binary="/usr/local/bin/goreleaser"
 goreleaser_config=${BUILDKITE_PLUGIN_DOCKER_IMAGE_GORELEASER_CONFIG:-".goreleaser_buildkite.yml"}
 linter=${BUILDKITE_PLUGIN_DOCKER_IMAGE_LINTER:-$DOCKER_LINTER_ENABLED}
 linter_image="hadolint/hadolint"
+scan=${BUILDKITE_PLUGIN_DOCKER_IMAGE_SCAN:-$DOCKER_SCAN_ENABLED}
+scan_image="aquasec/trivy"
 
 build=${DOCKER_DEFAULT_BUILD:-1}
 build=${BUILDKITE_PLUGIN_DOCKER_IMAGE_BUILD:-$build}
@@ -398,6 +400,15 @@ fi
 docker_image="$docker_registry/$image"
 if [ "$docker_registry" == "" ]; then
     docker_image="$image"
+fi
+
+# scan before push
+if [ $scan -gt 0 ]; then
+    echo "Scan ${file} with (${scan_image})" 
+    # scan_tmpdir=/tmp/scan/cache/$docker_image
+    # mkdir -p $scan_tmpdir    
+    #$docker run --rm -i -v $scan_tmpdir:/root/.cache/ ${scan_image} $BUILDKITE_PIPELINE_SLUG:$tag_sha
+    $docker run --rm -i ${scan_image} $BUILDKITE_PIPELINE_SLUG:$tag_sha
 fi
 
 if [ $push -gt 0 ]; then
