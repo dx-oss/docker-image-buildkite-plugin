@@ -107,7 +107,7 @@ tag_script=${BUILDKITE_PLUGIN_DOCKER_IMAGE_TAG_SCRIPT:-""}
 if [ -n "$tag_script" ]; then
     generated_tag=$($tag_script)
     if [ -n "$generated_tag" ]; then
-        tags="${tags} ${tag}"
+        tags="${tags} ${generated_tag}"
     fi
 fi
 if [ -z "$tags" ]; then
