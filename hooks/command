@@ -276,6 +276,11 @@ if [ $docker_login -gt 0 ] && [ $docker_logged_in -eq 0 ]; then
     fi
 fi
 
+
+if [ "${version}" == "" ]; then
+    version=$tag_sha
+fi
+
 docker_build_args=""
 if [ "${version}" != "" ]; then
     docker_build_args+=" --build-arg=\"VERSION=${version}\""
