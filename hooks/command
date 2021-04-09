@@ -103,9 +103,16 @@ if [ -z "$tags" ]; then
         tags="${version}"
     fi
 fi
+tag_script=${BUILDKITE_PLUGIN_DOCKER_IMAGE_TAG_SCRIPT:-""}
+if [ -n "$tag_script" ]; then
+    generated_tag=$(./$tag_script)
+    if [ -n "$generated_tag" ]; then
+        tags="${tags} ${generated_tag}"
+    fi
+fi
 if [ -z "$tags" ]; then
     echo "Tags are required"
-    exit 1    
+    exit 1
 fi
 
 # Dockerfile
@@ -190,7 +197,7 @@ if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
     docker_role=${AWS_ECR_AUTH_ROLE}
     docker_registry_region=${docker_registry_region:-$AWS_DEFAULT_REGION}
     docker_assume_role_required=0
-    
+
     image=${image:=$docker_registry_name}
 
     export AWS_ACCESS_KEY_ID=${docker_auth_user}
@@ -231,12 +238,12 @@ elif [ "$docker_provider" = "dockerhub" ] || [ "$docker_provider" = "docker" ]; 
     docker_registry_required=0
     docker_auth_user=${DOCKERHUB_USER}
     docker_auth_secret=${DOCKERHUB_SECRET}
-    image=${image:="${namespace}/${name}"}    
+    image=${image:="${namespace}/${name}"}
 elif [ "$docker_provider" = "github" ]; then
     docker_registry="${GITHUB_PACKAGE_DOCKER_REGISTRY}/${git_owner}/${git_repo}"
     docker_auth_user=${GITHUB_PACKAGE_DOCKER_USER}
     docker_auth_secret=${GITHUB_PACKAGE_DOCKER_SECRET}
-    image=${image:-$name}    
+    image=${image:-$name}
 fi
 
 if [ $docker_registry_required -eq 0 ]; then
@@ -250,13 +257,13 @@ if [ -z "$docker_provider" ]; then
     exit 1
 elif [ -z "$docker_registry" ] && [ $docker_registry_required -eq 1 ]; then
     echo "DOCKER_REGISTRY is empty"
-    exit 1    
+    exit 1
 elif [ -z "$docker_auth_user" ]; then
     echo "DOCKER_AUTH_USER is empty"
     exit 1
 elif [ -z "$docker_auth_secret" ]; then
     echo "DOCKER_AUTH_SECRET is empty"
-    exit 1    
+    exit 1
 fi
 
 export DOCKER_REGISTRY=$docker_registry
@@ -267,13 +274,18 @@ export DOCKER_BUILDKIT=$docker_buildkit
 
 # We want only to login if needed
 if [ $docker_login -gt 0 ] && [ $docker_logged_in -eq 0 ]; then
-    if [ "${DOCKER_ROLE}" == "" ]; then 
+    if [ "${DOCKER_ROLE}" == "" ]; then
         echo "Login into ${DOCKER_REGISTRY}"
         echo "${DOCKER_AUTH_SECRET}" | $docker login -u "${DOCKER_AUTH_USER}" --password-stdin "${DOCKER_REGISTRY}"
     else
         echo "TODO: fix assume role"
         exit 1
     fi
+fi
+
+
+if [ "${version}" == "" ]; then
+    version=$tag_sha
 fi
 
 docker_build_args=""
@@ -309,9 +321,9 @@ if [ $ssh -eq 1 ]; then
 fi
 
 # github
-if [ $github -eq 1 ]; then    
+if [ $github -eq 1 ]; then
     github_token=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_GITHUB_KEY}
-    github_token=${github_token:-$GITHUB_TOKEN}    
+    github_token=${github_token:-$GITHUB_TOKEN}
     if [ -z $github_token ]; then
         echo "Cannot find GITHUB_TOKEN"
         exit 1
@@ -328,7 +340,7 @@ if [ "$nuget" != "" ]; then
     elif [ "$nuget" == "jfrog" ]; then
         nuget_baseurl=${JFROG_NUGET_BASEURL}
         nuget_auth_user=${JFROG_NUGET_USER}
-        nuget_auth_secret=${JFROG_NUGET_SECRET}    
+        nuget_auth_secret=${JFROG_NUGET_SECRET}
     else
         nuget_baseurl=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_NUGET_URL}
         nuget_auth_user=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_NUGET_AUTH_USER}
@@ -340,14 +352,14 @@ if [ "$nuget" != "" ]; then
 
     if [ "$nuget_baseurl" == "" ]; then
         echo "NUGET_BASEURL is empty"
-        exit 1 
+        exit 1
     elif [ "$nuget_auth_user" == "" ]; then
         echo "NUGET_AUTH_USER is empty"
         exit 1
     elif [ "$nuget_auth_secret" == "" ]; then
         echo "NUGET_AUTH_SECRET is empty"
-        exit 1    
-    fi    
+        exit 1
+    fi
 
     docker_build_args+=" --build-arg=\"NUGET_BASEURL=${nuget_baseurl}\""
     docker_build_args+=" --build-arg=\"NUGET_AUTH_USER=${nuget_auth_user}\""
@@ -377,7 +389,7 @@ if [ $goreleaser -gt 0 ]; then
 
     echo "execute [$docker tag $goreleaser_image $BUILDKITE_PIPELINE_SLUG:$tag_sha]"
     $docker tag $goreleaser_image $BUILDKITE_PIPELINE_SLUG:$tag_sha
-elif [ $build -gt 0 ]; then    
+elif [ $build -gt 0 ]; then
     if [ $docker_buildkit -gt 0 ]; then
         args+=" --ssh=default"
         if [ $debug -gt 0 ]; then
@@ -407,7 +419,7 @@ fi
 # scan before push
 if [ $scan -gt 0 ]; then
     i="$BUILDKITE_PIPELINE_SLUG:$tag_sha"
-    echo "Scan ${i} with ${trivy}" 
+    echo "Scan ${i} with ${trivy}"
     trivy image ${i}
 fi
 
@@ -424,12 +436,12 @@ if [ $push -gt 0 ]; then
 
         echo running testcommand
         $testcommand "$BUILDKITE_PIPELINE_SLUG:$tag_sha"
-        
+
         echo "$docker push $docker_image:$t"
         $docker push $docker_image:$t
 
         $buildkite_agent annotate --style info "Docker image push [$docker_image:$t]"
-    done    
+    done
 fi
 
 if [ $push -gt 0 ] && [ $build -gt 0 ]; then

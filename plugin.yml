@@ -5,10 +5,13 @@ requirements: ["docker","buildkite-agent"]
 configuration:
   version:
     name: string
-    description: Version using [CONFIG:VERSION, META:VERSION, ENV:VERSION, ENV:BUILDKITE_TAG] variables if not set (required) 
+    description: Version using [CONFIG:VERSION, META:VERSION, ENV:VERSION, ENV:BUILDKITE_TAG] variables if not set (required)
   tags:
     name: array
     description: Image tags
+  tag_script:
+    name: string
+    description: A script file in the repo that will be executed to generate a tag name (appended to tags)
   tag_sha:
     name: int
     description: if value is greater then zero the plugin will add the git short sha as tag
@@ -17,7 +20,7 @@ configuration:
     description: Name it is used if image not set
   namespace:
     name: string
-    description: Namespace, it is used if image not set   
+    description: Namespace, it is used if image not set
   image:
     name: string
     description: Which name for docker image (IMAGE)
@@ -29,10 +32,10 @@ configuration:
     description: Registry host, default (REGISTRY_SERVER)
   registry_name:
     name: string
-    description: Registry name, default (REGISTRY_NAME) 
+    description: Registry name, default (REGISTRY_NAME)
   registry_region:
     name: string
-    description: Registry region, default (REGISTRY_REGION)  
+    description: Registry region, default (REGISTRY_REGION)
   registry_account:
     name: string
     description: Registry account id, default (REGISTRY_ACCOUNT)
@@ -50,7 +53,7 @@ configuration:
     description: Alternative Dockerfile
   linter:
     name: int
-    description: if value is greater then zero the plugin will execute linter to the dockerfile   
+    description: if value is greater then zero the plugin will execute linter to the dockerfile
   wrkdir:
     name: string
     description: Alternative working directory
@@ -77,7 +80,7 @@ configuration:
     description:  If not empty it would use nuget as provider
   nuget_baseurl:
     name: string
-    description: Fetch nuget base url from a env key, default (NUGET_BASEURL)   
+    description: Fetch nuget base url from a env key, default (NUGET_BASEURL)
   nuget_auth_user:
     name: string
     description: Nuget username key
@@ -89,10 +92,10 @@ configuration:
     description: if value is greater then zero the plugin it would build
   push:
     name: int
-    description: if value is greater then zero the plugin it would push   
+    description: if value is greater then zero the plugin it would push
   buildkit:
     name: int
-    description: if value is greater then zero the plugin would use buildkit    
+    description: if value is greater then zero the plugin would use buildkit
   dry:
     name: int
     description: if value is greater then zero the plugin will not pusht the new release
