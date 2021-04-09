@@ -110,13 +110,20 @@ fi
 
 # Dockerfile
 wrkdir=${BUILDKITE_PLUGIN_DOCKER_IMAGE_WRKDIR:-$pwd}
-file=${BUILDKITE_PLUGIN_DOCKER_IMAGE_FILE:-"Dockerfile"}
 if [ ! -d "$wrkdir" ]; then
     echo "Working directory ($wrkdir) does not exists"
     exit 1
 fi
 cd $wrkdir
 wrkdir=$(pwd)
+
+makeFileScript=${BUILDKITE_PLUGIN_DOCKER_IMAGE_FILE_SCRIPT:-"./Dockerfile.sh"}
+if [ -x "$makeFileScript" ]; then
+    echo "Execute [${makeFileScript}] for generate the Dockerfile"
+    run $makeFileScript
+fi
+
+file=${BUILDKITE_PLUGIN_DOCKER_IMAGE_FILE:-"Dockerfile"}
 if [ ! -e "$file" ]; then
     echo "Dockerfile ($file) does not exists"
     exit 1
