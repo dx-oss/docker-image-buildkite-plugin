@@ -127,7 +127,7 @@ wrkdir=$(pwd)
 makeFileScript=${BUILDKITE_PLUGIN_DOCKER_IMAGE_FILE_SCRIPT:-"./Dockerfile.sh"}
 if [ -x "$makeFileScript" ]; then
     echo "Execute [${makeFileScript}] for generate the Dockerfile"
-    run $makeFileScript
+    $makeFileScript
 fi
 
 file=${BUILDKITE_PLUGIN_DOCKER_IMAGE_FILE:-"Dockerfile"}
