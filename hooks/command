@@ -23,6 +23,7 @@ linter=${BUILDKITE_PLUGIN_DOCKER_IMAGE_LINTER:-$DOCKER_LINTER_ENABLED}
 linter_image="hadolint/hadolint"
 scan=${BUILDKITE_PLUGIN_DOCKER_IMAGE_SCAN:-$DOCKER_SCAN_ENABLED}
 scan_image="aquasec/trivy"
+scan=${scan:0}
 
 build=${DOCKER_DEFAULT_BUILD:-1}
 build=${BUILDKITE_PLUGIN_DOCKER_IMAGE_BUILD:-$build}
