@@ -427,6 +427,7 @@ if [ $goreleaser -gt 0 ]; then
     $docker tag $goreleaser_image $BUILDKITE_PIPELINE_SLUG:$tag_sha
 elif [ $build -gt 0 ]; then
     if [ $docker_buildkit -gt 0 ]; then
+        export DOCKER_BUILDKIT=1
         args+=" --ssh=default"
         if [ $debug -gt 0 ]; then
             args+=" --progress plain"
