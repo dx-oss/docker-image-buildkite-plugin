@@ -195,7 +195,7 @@ else
 fi
 echo "docker_providers[@]" "${docker_providers[@]}"
 declare -a docker_registries
-declare -a image_names
+declare -A image_names
 for docker_provider in "${docker_providers[@]}"; do
     image=${BUILDKITE_PLUGIN_DOCKER_IMAGE_IMAGE:-""}
     goreleaser_image=${BUILDKITE_PLUGIN_DOCKER_IMAGE_GORELEASER_IMAGE:-"${image}:latest"}
@@ -318,7 +318,7 @@ for docker_provider in "${docker_providers[@]}"; do
         fi
     fi
     docker_registries+=( "$docker_registry" )
-    image_names[$docker_registry]=$image
+    image_names["$docker_registry"]=$image
 done
 
 
