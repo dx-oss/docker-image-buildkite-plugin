@@ -429,8 +429,6 @@ if [ $goreleaser -gt 0 ]; then
 elif [ $build -gt 0 ]; then
     if [ $docker_buildkit -gt 0 ]; then
         export DOCKER_BUILDKIT=1
-        #workaround.. https://github.com/moby/moby/issues/39120#issuecomment-815457976
-        docker pull docker/dockerfile:experimental
         args+=" --ssh=default"
         if [ $debug -gt 0 ]; then
             args+=" --progress plain"
