@@ -1,4 +1,27 @@
 #!/usr/bin/env bash
+# Reads a list from plugin config into a global result array
+# Returns success if values were read
+plugin_read_list_into_result() {
+  result=()
+
+  for prefix in "$@" ; do
+    local i=0
+    local parameter="${prefix}_${i}"
+
+    if [[ -n "${!prefix:-}" ]] ; then
+      echo "🚨 Plugin received a string for $prefix, expected an array" >&2
+      exit 1
+    fi
+
+    while [[ -n "${!parameter:-}" ]]; do
+      result+=("${!parameter}")
+      i=$((i+1))
+      parameter="${prefix}_${i}"
+    done
+  done
+
+  [[ ${#result[@]} -gt 0 ]] || return 1
+}
 
 # https://buildkite.com/docs/pipelines/writing-build-scripts
 # https://buildkite.com/docs/pipelines/writing-build-scripts#configuring-bash
@@ -159,14 +182,20 @@ docker_buildkit=${BUILDKITE_PLUGIN_DOCKER_IMAGE_BUILDKIT:-$DOCKER_BUILDKIT}
 docker_registry_region=${BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY_REGION}
 docker_registry_account=${BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY_ACCOUNT}
 docker_registry_required=1
-docker_providers=${BUILDKITE_PLUGIN_DOCKER_IMAGE_PROVIDERS:-$DOCKER_PROVIDERS}
 docker_extra_build_args=${BUILDKITE_PLUGIN_DOCKER_IMAGE_BUILDARGS}
+declare -a docker_providers
+if plugin_read_list_into_result BUILDKITE_PLUGIN_DOCKER_IMAGE_PROVIDERS ; then
+  for key in "${!result[@]}" ; do
+      docker_providers["$key"]="${result["$key"]}"
+  done
+else
+  for key in "${!DOCKER_PROVIDERS[@]}" ; do
+      docker_providers["$key"]="${DOCKER_PROVIDERS["$key"]}"
+  done
+fi
+echo "docker_providers[@]" "${docker_providers[@]}"
 declare -a docker_registries
 declare -a image_names
-echo "providers:" "$BUILDKITE_PLUGIN_DOCKER_IMAGE_PROVIDERS"
-echo "providers[@]:" "${BUILDKITE_PLUGIN_DOCKER_IMAGE_PROVIDERS[@]}"
-echo "docker_providers:" "$docker_providers"
-echo "docker_providers[@]" "${docker_providers[@]}"
 for docker_provider in "${docker_providers[@]}"; do
     image=${BUILDKITE_PLUGIN_DOCKER_IMAGE_IMAGE:-""}
     goreleaser_image=${BUILDKITE_PLUGIN_DOCKER_IMAGE_GORELEASER_IMAGE:-"${image}:latest"}
