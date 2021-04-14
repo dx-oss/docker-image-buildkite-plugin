@@ -34,6 +34,7 @@ configuration:
     name: string
     description: Which name for docker image (IMAGE)
   providers:
+    type: array
     name: array
     description: Where to push the nuget url a env key, default (REGISTRY_PROVIDER)
   registry:

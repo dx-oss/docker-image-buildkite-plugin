@@ -163,6 +163,8 @@ docker_providers=${BUILDKITE_PLUGIN_DOCKER_IMAGE_PROVIDERS:-$DOCKER_PROVIDERS}
 docker_extra_build_args=${BUILDKITE_PLUGIN_DOCKER_IMAGE_BUILDARGS}
 declare -a docker_registries
 declare -a image_names
+echo "providers:" "$BUILDKITE_PLUGIN_DOCKER_IMAGE_PROVIDERS"
+echo "providers[@]:" "${BUILDKITE_PLUGIN_DOCKER_IMAGE_PROVIDERS[@]}"
 echo "docker_providers:" "$docker_providers"
 echo "docker_providers[@]" "${docker_providers[@]}"
 for docker_provider in "${docker_providers[@]}"; do
