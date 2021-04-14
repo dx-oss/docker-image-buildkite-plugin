@@ -15,17 +15,26 @@ configuration:
   tag_sha:
     name: int
     description: if value is greater then zero the plugin will add the git short sha as tag
-  name:
+  name_aws:
     name: string
-    description: Name it is used if image not set
+    description: Name used for aws if image not set
+  name_jfrog:
+    name: string
+    description: Name used for jfrog if image not set
+  name_dockerhub:
+    name: string
+    description: Name used for dockerhub if image not set
+  name_github:
+    name: string
+    description: Name used for github if image not set
   namespace:
     name: string
     description: Namespace, it is used if image not set
   image:
     name: string
     description: Which name for docker image (IMAGE)
-  provider:
-    name: string
+  providers:
+    name: array
     description: Where to push the nuget url a env key, default (REGISTRY_PROVIDER)
   registry:
     name: string

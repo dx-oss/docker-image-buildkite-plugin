@@ -287,7 +287,7 @@ for docker_provider in "${docker_providers[@]}"; do
         fi
     fi
     docker_registries+=( "$docker_registry" )
-    image_names[$docker_registry] = $image
+    image_names[$docker_registry]=$image
 done
 
 
