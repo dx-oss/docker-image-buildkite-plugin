@@ -30,6 +30,7 @@ set -eo pipefail
 
 # common
 aws --version
+docker --version
 
 pwd=$(pwd)
 testcommand=${BUILDKITE_PLUGIN_DOCKER_IMAGE_TEST_COMMAND:-"echo no test command on image:"}
