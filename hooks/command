@@ -459,6 +459,14 @@ if [ $scan -gt 0 ]; then
     trivy image ${i}
 fi
 
+echo running testcommand
+$testcommand "$BUILDKITE_PIPELINE_SLUG:$tag_sha"
+testcommand_returncode=$?
+if [ $testcommand_returncode -ne 0 ]; then
+    echo "testcommand returned exitcode $testcommand_returncode"
+    exit $testcommand_returncode
+fi
+
 for docker_registry in "${docker_registries[@]}"; do
     docker_image="$docker_registry/${image_names[$docker_registry]}"
     if [ "$docker_registry" == "" ]; then
@@ -470,9 +478,6 @@ for docker_registry in "${docker_registries[@]}"; do
         do
             echo "$docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_image:$t"
             $docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_image:$t
-
-            echo running testcommand
-            $testcommand "$BUILDKITE_PIPELINE_SLUG:$tag_sha"
 
             echo "$docker push $docker_image:$t"
             $docker push $docker_image:$t
