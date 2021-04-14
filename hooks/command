@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # https://buildkite.com/docs/pipelines/writing-build-scripts
 # https://buildkite.com/docs/pipelines/writing-build-scripts#configuring-bash
@@ -159,130 +159,128 @@ fi
 docker_file=$file
 docker_assume_role_required=0
 docker_login=$push          # we dont need to login if not going to push
-docker_logged_in=0
 docker_buildkit=${BUILDKITE_PLUGIN_DOCKER_IMAGE_BUILDKIT:-$DOCKER_BUILDKIT}
-docker_role=${BUILDKITE_PLUGIN_DOCKER_IMAGE_ROLE:-""}
-docker_registry=${BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY}
 docker_registry_region=${BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY_REGION}
 docker_registry_account=${BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY_ACCOUNT}
 docker_registry_required=1
-docker_auth_user=${BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_USER}
-docker_auth_secret=${BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_SECRET}
-docker_provider=${BUILDKITE_PLUGIN_DOCKER_IMAGE_PROVIDER:-$DOCKER_PROVIDER}
+docker_providers=${BUILDKITE_PLUGIN_DOCKER_IMAGE_PROVIDERS:-$DOCKER_PROVIDERS}
 docker_extra_build_args=${BUILDKITE_PLUGIN_DOCKER_IMAGE_BUILDARGS}
-if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
-    echo "Using aws ecr"
+declare -a docker_registries
+for docker_provider in "${docker_providers[@]}"; do
+    docker_registry=${BUILDKITE_PLUGIN_DOCKER_IMAGE_REGISTRY}
+    docker_auth_user=${BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_USER}
+    docker_auth_secret=${BUILDKITE_PLUGIN_DOCKER_IMAGE_AUTH_SECRET}
+    docker_role=${BUILDKITE_PLUGIN_DOCKER_IMAGE_ROLE:-""}
+    docker_logged_in=0
+    if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
+        echo "Using aws ecr"
 
-    ###
-    echo "TODO: REMOVE THIS WHEN WE HAVE THE AWS VERSION IN AGENT(!)"
-    awscli="aws"
-    aws --version > aws_cli_ver.txt 2>&1
-    cat aws_cli_ver.txt
-    aws_cli_v1=$(grep -c "aws-cli/1" aws_cli_ver.txt)
-    if [ $aws_cli_v1 -gt 0 ]; then
-        if [ ! -x "aws/dist/aws" ]; then
-            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-            unzip -q awscliv2.zip
-            awscli=${wrkdir}/aws/dist/aws
-            $awscli --version
+        ###
+        echo "TODO: REMOVE THIS WHEN WE HAVE THE AWS VERSION IN AGENT(!)"
+        awscli="aws"
+        aws --version > aws_cli_ver.txt 2>&1
+        cat aws_cli_ver.txt
+        aws_cli_v1=$(grep -c "aws-cli/1" aws_cli_ver.txt)
+        if [ $aws_cli_v1 -gt 0 ]; then
+            if [ ! -x "aws/dist/aws" ]; then
+                curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+                unzip -q awscliv2.zip
+                awscli=${wrkdir}/aws/dist/aws
+                $awscli --version
+            fi
         fi
-    fi
-    ###
+        ###
 
-    docker_registry=${AWS_ECR_REGISTRY:-$docker_registry}
-    docker_registry_name=${name:-$AWS_ECR_REGISTRY_NAME}
-    docker_registry_name=${name:-$BUILDKITE_PIPELINE_SLUG}
+        docker_registry=${AWS_ECR_REGISTRY:-$docker_registry}
+        docker_registry_name=${name:-$AWS_ECR_REGISTRY_NAME}
+        docker_registry_name=${name:-$BUILDKITE_PIPELINE_SLUG}
 
-    docker_auth_user=${AWS_ECR_AUTH_USER:-$AWS_ACCESS_KEY_ID}
-    docker_auth_secret=${AWS_ECR_AUTH_SECRET:-$AWS_SECRET_ACCESS_KEY}
-    docker_role=${AWS_ECR_AUTH_ROLE}
-    docker_registry_region=${docker_registry_region:-$AWS_DEFAULT_REGION}
-    docker_assume_role_required=0
+        docker_auth_user=${AWS_ECR_AUTH_USER:-$AWS_ACCESS_KEY_ID}
+        docker_auth_secret=${AWS_ECR_AUTH_SECRET:-$AWS_SECRET_ACCESS_KEY}
+        docker_role=${AWS_ECR_AUTH_ROLE}
+        docker_registry_region=${docker_registry_region:-$AWS_DEFAULT_REGION}
+        docker_assume_role_required=0
 
-    image=${image:=$docker_registry_name}
+        image=${image:=$docker_registry_name}
 
-    export AWS_ACCESS_KEY_ID=${docker_auth_user}
-    export AWS_SECRET_ACCESS_KEY=${docker_auth_secret}
-    export AWS_DEFAULT_REGION=${docker_registry_region}
+        export AWS_ACCESS_KEY_ID=${docker_auth_user}
+        export AWS_SECRET_ACCESS_KEY=${docker_auth_secret}
+        export AWS_DEFAULT_REGION=${docker_registry_region}
 
-    # check ecr
-    if [ "$docker_registry" == "" ]; then
-        docker_registry=$($awscli ecr describe-repositories --repository-names "${docker_registry_name}" --output text --query 'repositories[0].repositoryUri' | cut -f1 -d/ || true)
+        # check ecr
         if [ "$docker_registry" == "" ]; then
-            echo "Create registry ${docker_registry_name}"
-            $awscli ecr create-repository --repository-name "${docker_registry_name}"
             docker_registry=$($awscli ecr describe-repositories --repository-names "${docker_registry_name}" --output text --query 'repositories[0].repositoryUri' | cut -f1 -d/ || true)
+            if [ "$docker_registry" == "" ]; then
+                echo "Create registry ${docker_registry_name}"
+                $awscli ecr create-repository --repository-name "${docker_registry_name}"
+                docker_registry=$($awscli ecr describe-repositories --repository-names "${docker_registry_name}" --output text --query 'repositories[0].repositoryUri' | cut -f1 -d/ || true)
+            fi
+            if [ "$docker_registry" == "" ]; then
+                docker_registry="${docker_registry_account}.dkr.ecr.${docker_registry_region}.amazonaws.com"
+            fi
         fi
-        if [ "$docker_registry" == "" ]; then
-            docker_registry="${docker_registry_account}.dkr.ecr.${docker_registry_region}.amazonaws.com"
+
+        # Only login if docker_login is greater than zero
+        if [ $docker_login -gt 0 ]; then
+            echo "Login [${docker_registry}]"
+            $awscli ecr get-login-password --region ${docker_registry_region} | docker login --username AWS --password-stdin ${docker_registry}
+            docker_logged_in=1
         fi
+    elif [ "$docker_provider" = "jfrog" ]; then
+        echo "Using jfrog"
+        docker_registry=${JFROG_DOCKER_REGISTRY}
+        docker_auth_user=${JFROG_DOCKER_USER}
+        docker_auth_secret=${JFROG_DOCKER_SECRET}
+        image=${image:="${namespace}/${name}"}
+    elif [ "$docker_provider" = "dockerhub" ] || [ "$docker_provider" = "docker" ]; then
+        echo "Using dockerhub"
+        DOCKER_REGISTRY=${DOCKERHUB_REGISTRY}
+        DOCKER_AUTH_USER=${DOCKERHUB_USER}
+        DOCKER_AUTH_SECRET=${DOCKERHUB_SECRET}
+        docker_registry=${DOCKERHUB_REGISTRY}
+        docker_registry_required=0
+        docker_auth_user=${DOCKERHUB_USER}
+        docker_auth_secret=${DOCKERHUB_SECRET}
+        image=${image:="${namespace}/${name}"}
+    elif [ "$docker_provider" = "github" ]; then
+        docker_registry="${GITHUB_PACKAGE_DOCKER_REGISTRY}/${git_owner}/${git_repo}"
+        docker_auth_user=${GITHUB_PACKAGE_DOCKER_USER}
+        docker_auth_secret=${GITHUB_PACKAGE_DOCKER_SECRET}
+        image=${image:-$name}
     fi
 
-    # Only login if docker_login is greater than zero
-    if [ $docker_login -gt 0 ]; then
-        echo "Login [${docker_registry}]"
-        $awscli ecr get-login-password --region ${docker_registry_region} | docker login --username AWS --password-stdin ${docker_registry}
-        docker_logged_in=1
+    if [ $docker_registry_required -eq 0 ]; then
+        docker_registry=${docker_registry:-$DOCKER_REGISTRY}
+        docker_auth_user=${docker_auth_user:-$DOCKER_AUTH_USER}
+        docker_auth_secret=${docker_auth_secret:-$DOCKER_AUTH_SECRET}
     fi
-elif [ "$docker_provider" = "jfrog" ]; then
-    echo "Using jfrog"
-    docker_registry=${JFROG_DOCKER_REGISTRY}
-    docker_auth_user=${JFROG_DOCKER_USER}
-    docker_auth_secret=${JFROG_DOCKER_SECRET}
-    image=${image:="${namespace}/${name}"}
-elif [ "$docker_provider" = "dockerhub" ] || [ "$docker_provider" = "docker" ]; then
-    echo "Using dockerhub"
-    DOCKER_REGISTRY=${DOCKERHUB_REGISTRY}
-    DOCKER_AUTH_USER=${DOCKERHUB_USER}
-    DOCKER_AUTH_SECRET=${DOCKERHUB_SECRET}
-    docker_registry=${DOCKERHUB_REGISTRY}
-    docker_registry_required=0
-    docker_auth_user=${DOCKERHUB_USER}
-    docker_auth_secret=${DOCKERHUB_SECRET}
-    image=${image:="${namespace}/${name}"}
-elif [ "$docker_provider" = "github" ]; then
-    docker_registry="${GITHUB_PACKAGE_DOCKER_REGISTRY}/${git_owner}/${git_repo}"
-    docker_auth_user=${GITHUB_PACKAGE_DOCKER_USER}
-    docker_auth_secret=${GITHUB_PACKAGE_DOCKER_SECRET}
-    image=${image:-$name}
-fi
 
-if [ $docker_registry_required -eq 0 ]; then
-    docker_registry=${docker_registry:-$DOCKER_REGISTRY}
-    docker_auth_user=${docker_auth_user:-$DOCKER_AUTH_USER}
-    docker_auth_secret=${docker_auth_secret:-$DOCKER_AUTH_SECRET}
-fi
-
-if [ -z "$docker_provider" ]; then
-    echo "DOCKER_PROVIDER is empty"
-    exit 1
-elif [ -z "$docker_registry" ] && [ $docker_registry_required -eq 1 ]; then
-    echo "DOCKER_REGISTRY is empty"
-    exit 1
-elif [ -z "$docker_auth_user" ]; then
-    echo "DOCKER_AUTH_USER is empty"
-    exit 1
-elif [ -z "$docker_auth_secret" ]; then
-    echo "DOCKER_AUTH_SECRET is empty"
-    exit 1
-fi
-
-export DOCKER_REGISTRY=$docker_registry
-export DOCKER_AUTH_USER=$docker_auth_user
-export DOCKER_AUTH_SECRET=$docker_auth_secret
-export DOCKER_ROLE=$docker_role
-export DOCKER_BUILDKIT=$docker_buildkit
-
-# We want only to login if needed
-if [ $docker_login -gt 0 ] && [ $docker_logged_in -eq 0 ]; then
-    if [ "${DOCKER_ROLE}" == "" ]; then
-        echo "Login into ${DOCKER_REGISTRY}"
-        echo "${DOCKER_AUTH_SECRET}" | $docker login -u "${DOCKER_AUTH_USER}" --password-stdin "${DOCKER_REGISTRY}"
-    else
-        echo "TODO: fix assume role"
+    if [ -z "$docker_provider" ]; then
+        echo "DOCKER_PROVIDER is empty"
+        exit 1
+    elif [ -z "$docker_registry" ] && [ $docker_registry_required -eq 1 ]; then
+        echo "DOCKER_REGISTRY is empty"
+        exit 1
+    elif [ -z "$docker_auth_user" ]; then
+        echo "DOCKER_AUTH_USER is empty"
+        exit 1
+    elif [ -z "$docker_auth_secret" ]; then
+        echo "DOCKER_AUTH_SECRET is empty"
         exit 1
     fi
-fi
+
+    # We want only to login if needed
+    if [ $docker_login -gt 0 ] && [ $docker_logged_in -eq 0 ]; then
+        if [ "${docker_role}" == "" ]; then
+            echo "Login into ${docker_registry}"
+            echo "${docker_auth_secret}" | $docker login -u "${docker_auth_user}" --password-stdin "${docker_registry}"
+        else
+            echo "TODO: fix assume role"
+            exit 1
+        fi
+    fi
+    docker_registries+=( "$docker_registry" )
+done
 
 
 if [ "${version}" == "" ]; then
@@ -378,8 +376,6 @@ if [ $debug -eq 0 ]; then
 fi
 
 if [ $goreleaser -gt 0 ]; then
-    export DOCKER_REPO1_URL=$docker_registry
-
     goreleaser_args="--rm-dist --snapshot -f ${goreleaser_config}"
     if [ $debug -gt 0 ]; then
         goreleaser_args="${goreleaser_args} --debug"
@@ -424,33 +420,35 @@ if [ $scan -gt 0 ]; then
     trivy image ${i}
 fi
 
-docker_image="$docker_registry/$image"
-if [ "$docker_registry" == "" ]; then
-    docker_image="$image"
-fi
+for docker_registry in "${docker_registries[@]}"; do
+    docker_image="$docker_registry/$image"
+    if [ "$docker_registry" == "" ]; then
+        docker_image="$image"
+    fi
 
-if [ $push -gt 0 ]; then
-    for t in $tags
-    do
-        echo "$docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_image:$t"
-        $docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_image:$t
+    if [ $push -gt 0 ]; then
+        for t in $tags
+        do
+            echo "$docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_image:$t"
+            $docker tag $BUILDKITE_PIPELINE_SLUG:$tag_sha $docker_image:$t
 
-        echo running testcommand
-        $testcommand "$BUILDKITE_PIPELINE_SLUG:$tag_sha"
+            echo running testcommand
+            $testcommand "$BUILDKITE_PIPELINE_SLUG:$tag_sha"
 
-        echo "$docker push $docker_image:$t"
-        $docker push $docker_image:$t
+            echo "$docker push $docker_image:$t"
+            $docker push $docker_image:$t
 
-        $buildkite_agent annotate --style info "Docker image push [$docker_image:$t]"
-    done
-fi
+            $buildkite_agent annotate --style info "Docker image push [$docker_image:$t]"
+        done
+    fi
 
-if [ $push -gt 0 ] && [ $build -gt 0 ]; then
-    $buildkite_agent annotate --style success "Docker image build and push [$docker_image:$tags]"
-elif [ $build -gt 0 ]; then
-    $buildkite_agent annotate --style success "Docker image build [$docker_image:$tag_sha]"
-elif [ $push -gt 0 ]; then
-    $buildkite_agent annotate --style success "Docker image push [$docker_image:$tags]"
-fi
+    if [ $push -gt 0 ] && [ $build -gt 0 ]; then
+        $buildkite_agent annotate --style success "Docker image build and push [$docker_image:$tags]"
+    elif [ $build -gt 0 ]; then
+        $buildkite_agent annotate --style success "Docker image build [$docker_image:$tag_sha]"
+    elif [ $push -gt 0 ]; then
+        $buildkite_agent annotate --style success "Docker image push [$docker_image:$tags]"
+    fi
+done
 
 $docker images
