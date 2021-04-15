@@ -106,10 +106,10 @@ configuration:
   buildkit:
     name: int
     description: if value is greater then zero the plugin would use buildkit
-  dry:
-    name: int
-    description: if value is greater then zero the plugin will not pusht the new release
   agent:
     name: string
     description: buildkite-agent binary (https://github.com/buildkite/agent)
+  repo_override:
+    type: string
+    description: overrides $git_repo (used for naming sometimes (in github always)))
   additionalProperties: false

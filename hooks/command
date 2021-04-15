@@ -34,7 +34,6 @@ docker --version
 
 pwd=$(pwd)
 testcommand=${BUILDKITE_PLUGIN_DOCKER_IMAGE_TEST_COMMAND:-"echo no test command on image:"}
-dryrun=${BUILDKITE_PLUGIN_DOCKER_IMAGE_DRY:-0}
 nocache=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NOCACHE:-1}
 ssh=${BUILDKITE_PLUGIN_DOCKER_IMAGE_SSH:-0}
 ssh_file=${BUILDKITE_PLUGIN_DOCKER_IMAGE_SSH_FILE:-"~/.ssh/id_rsa"}
@@ -46,7 +45,6 @@ goreleaser_config=${BUILDKITE_PLUGIN_DOCKER_IMAGE_GORELEASER_CONFIG:-".gorelease
 linter=${BUILDKITE_PLUGIN_DOCKER_IMAGE_LINTER:-$DOCKER_LINTER_ENABLED}
 linter_image="hadolint/hadolint"
 scan=${BUILDKITE_PLUGIN_DOCKER_IMAGE_SCAN:-$DOCKER_SCAN_ENABLED}
-scan_image="aquasec/trivy"
 scan=${scan:0}
 
 build=${DOCKER_DEFAULT_BUILD:-1}
@@ -79,8 +77,7 @@ version=${version:-""}
 
 # git
 git_owner=$(echo "$BUILDKITE_REPO" | cut -d: -f 2 | cut -d/ -f 1)
-git_repo=$(echo "$BUILDKITE_REPO" | cut -d: -f 2 | cut -d/ -f 2 | cut -d. -f 1)
-git_url=https://github.com/${git_owner}/${git_repo}/
+git_repo=$(echo "${BUILDKITE_PLUGIN_DOCKER_IMAGE_REPO_OVERRIDE:-$BUILDKITE_REPO}" | cut -d: -f 2 | cut -d/ -f 2 | cut -d. -f 1)
 
 # image
 
