@@ -41,7 +41,8 @@ github=${BUILDKITE_PLUGIN_DOCKER_IMAGE_GITHUB:-0}
 nuget=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NUGET:-""}
 goreleaser=${BUILDKITE_PLUGIN_DOCKER_IMAGE_GORELEASER:-0}
 goreleaser_binary="/usr/local/bin/goreleaser"
-goreleaser_config=${BUILDKITE_PLUGIN_DOCKER_IMAGE_GORELEASER_CONFIG:-".goreleaser_buildkite.yml"}
+goreleaser_config=${BUILDKITE_PLUGIN_DOCKER_IMAGE_GORELEASER_CONFIG:-".goreleaser.yml"}
+goreleaser_version=${BUILDKITE_PLUGIN_DOCKER_IMAGE_GORELEASER_VERSION:-"v1.2.2"}
 linter=${BUILDKITE_PLUGIN_DOCKER_IMAGE_LINTER:-$DOCKER_LINTER_ENABLED}
 linter_image="hadolint/hadolint"
 scan=${BUILDKITE_PLUGIN_DOCKER_IMAGE_SCAN:-$DOCKER_SCAN_ENABLED}
@@ -164,8 +165,10 @@ if [ $goreleaser -gt 0 ]; then
     if [ -x "$goreleaser_binary" ]; then
         echo "$goreleaser_binary allreay installed"
     else
-        echo "install goreleaser"
-        curl -L "https://github.com/goreleaser/goreleaser/releases/download/v0.140.0/goreleaser_Linux_x86_64.tar.gz" -o "goreleaser.tar.gz"
+        # TODO: check sum
+        gorelaser_url="https://github.com/goreleaser/goreleaser/releases/download/${goreleaser_version}/goreleaser_Linux_x86_64.tar.gz"
+        echo "install goreleaser (${gorelaser_url})"
+        curl -L "${gorelaser_url}" -o "goreleaser.tar.gz"
         tar -zxvf goreleaser.tar.gz
         chmod +x goreleaser
         goreleaser_binary="${wrkdir}/goreleaser"
