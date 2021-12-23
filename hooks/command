@@ -177,12 +177,14 @@ if [ $goreleaser -gt 0 ]; then
     go_path=/usr/local/go
     go_binary="${go_path}/bin/go"
     if [ ! -x "$go_binary" ]; then
+        go_path="${wrkdir}/go"
+        mkdir -p $go_path
         go_version="1.17.5"
         go_url="https://dl.google.com/go/go${go_version}.linux-amd64.tar.gz"
         curl -L "${go_url}" -o "go.tar.gz"
-        tar -C /usr/local/ -xzf go.tar.gz
-    fi
-    export PATH=$PATH:$go_path/bin
+        tar -C "${wrkdir}/" -xzf go.tar.gz
+        export PATH=$PATH:$go_path/bin
+    fi    
     go version
 fi
 
