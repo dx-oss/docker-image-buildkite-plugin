@@ -173,6 +173,17 @@ if [ $goreleaser -gt 0 ]; then
         chmod +x goreleaser
         goreleaser_binary="${wrkdir}/goreleaser"
     fi
+
+    go_path=/usr/local/go
+    go_binary="${go_path}/bin/go"
+    if [ ! -x "$go_binary" ]; then
+        go_version="1.17.5"
+        go_url="https://dl.google.com/go/go${go_version}.linux-amd64.tar.gz"
+        curl -L "${go_url}" -o "go.tar.gz"
+        tar -C /usr/local/ -xzf go.tar.gz
+    fi
+    export PATH=$PATH:$go_path/bin
+    go version
 fi
 
 # docker - check if a key is set and it exists in env, if not use default env
