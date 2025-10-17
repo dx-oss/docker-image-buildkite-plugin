@@ -433,12 +433,17 @@ elif [ $build -gt 0 ]; then
     fi
 
     build_script="build-$$.sh"
+    touch $build_script
 
     if [ $debug -gt 1 ]; then
         echo "add [$docker build ${docker_build_args} $args -f $docker_file -t $BUILDKITE_PIPELINE_SLUG:$tag_sha .] to [$build_script]"
     fi
 
-    echo "$docker build ${docker_build_args} $args -f $docker_file -t $BUILDKITE_PIPELINE_SLUG:$tag_sha ." > $build_script
+    if [ "$testtarget" != "" ]; then
+        echo "$docker build ${docker_build_args} $args -f $docker_file -t $BUILDKITE_PIPELINE_SLUG:${tag_sha}test --target $testtarget ." >> $build_script
+    fi
+
+    echo "$docker build ${docker_build_args} $args -f $docker_file -t $BUILDKITE_PIPELINE_SLUG:$tag_sha ." >> $build_script
     chmod +x $build_script
     if [ $debug -gt 1 ]; then
         cat $build_script
@@ -459,7 +464,12 @@ if [ $scan -gt 0 ]; then
 fi
 
 echo running testcommand
-$testcommand "$BUILDKITE_PIPELINE_SLUG:$tag_sha"
+if [ "$testtarget" != "" ]; then
+    i="$BUILDKITE_PIPELINE_SLUG:${tag_sha}test"
+else
+    i="$BUILDKITE_PIPELINE_SLUG:$tag_sha"
+fi
+$testcommand "$i"
 testcommand_returncode=$?
 if [ $testcommand_returncode -ne 0 ]; then
     echo "testcommand returned exitcode $testcommand_returncode"
