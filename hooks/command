@@ -427,10 +427,8 @@ if [ $goreleaser -gt 0 ]; then
 elif [ $build -gt 0 ]; then
     if [ $docker_buildkit -gt 0 ]; then
         export DOCKER_BUILDKIT=1
+        export BUILDKIT_PROGRESS=plain
         args+=" --ssh=default"
-        if [ $debug -gt 0 ]; then
-            args+=" --progress plain"
-        fi
     fi
 
     build_script="build-$$.sh"
