@@ -35,7 +35,7 @@ docker --version
 pwd=$(pwd)
 testcommand=${BUILDKITE_PLUGIN_DOCKER_IMAGE_TEST_COMMAND:-"echo no test command on image:"}
 testtarget=${BUILDKITE_PLUGIN_DOCKER_IMAGE_TESTTARGET:-""}
-nocache=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NOCACHE:-1}
+nocache=${BUILDKITE_PLUGIN_DOCKER_IMAGE_NOCACHE:-0}
 ssh=${BUILDKITE_PLUGIN_DOCKER_IMAGE_SSH:-0}
 ssh_file=${BUILDKITE_PLUGIN_DOCKER_IMAGE_SSH_FILE:-"~/.ssh/id_rsa"}
 github=${BUILDKITE_PLUGIN_DOCKER_IMAGE_GITHUB:-0}
@@ -408,9 +408,6 @@ fi
 args="--rm"
 if [ $nocache -gt 0 ]; then
     args+=' --no-cache --pull'
-fi
-if [ $debug -eq 0 ]; then
-    args+=' --quiet'
 fi
 
 if [ $goreleaser -gt 0 ]; then
