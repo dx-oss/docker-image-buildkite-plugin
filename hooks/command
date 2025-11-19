@@ -255,7 +255,7 @@ for docker_provider in "${docker_providers[@]}"; do
         # Only login if docker_login is greater than zero
         if [ $docker_login -gt 0 ]; then
             echo "Login [${docker_registry}]"
-            aws ecr get-login-password --region ${docker_registry_region} | docker login --username AWS --password-stdin ${docker_registry}
+            aws ecr get-login-password --region ${docker_registry_region} | docker login --username AWS --password-stdin ${docker_registry} || true
             docker_logged_in=1
         fi
     elif [ "$docker_provider" = "jfrog" ]; then
